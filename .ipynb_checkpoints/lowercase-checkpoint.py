@@ -93,5 +93,7 @@ def parse_args():
 
 
 if __name__ == "__main__":
+    multiprocessing.set_start_method("fork")  # Use "fork" for faster process spawning
+
     args = parse_args()
     lowercase_ngram_tokens_in_directory(args.input_dir, args.output_dir, processes=args.processes)

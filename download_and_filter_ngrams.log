@@ -15896,3 +15896,151 @@
 15:54:43 - Rejection summary: {"invalid_pos_tag":3449931,"numeral":0,"nonalpha":0,"not_in_vocab":0,"other":0}
 15:54:43 - Finished processing file: 00006-of-19423
 15:54:44 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/5-00053-of-19423.gz
+16:55:50 - Fetching file URLs from: https://storage.googleapis.com/books/ngrams/books/20200217/eng/eng-1-ngrams_exports.html
+16:55:50 - Found 24 files matching pattern 1-\d{5}-of-\d{5}\.gz.
+16:56:08 - Fetching file URLs from: https://storage.googleapis.com/books/ngrams/books/20200217/eng/eng-1-ngrams_exports.html
+16:56:08 - Found 24 files matching pattern 1-\d{5}-of-\d{5}\.gz.
+16:59:54 - Fetching file URLs from: https://storage.googleapis.com/books/ngrams/books/20200217/eng/eng-1-ngrams_exports.html
+16:59:55 - Found 24 files matching pattern 1-\d{5}-of-\d{5}\.gz.
+16:59:55 - Starting multiprocessing for file processing.
+16:59:55 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00000-of-00024.gz
+16:59:55 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00004-of-00024.gz
+16:59:55 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00005-of-00024.gz
+16:59:55 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00001-of-00024.gz
+16:59:55 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00003-of-00024.gz
+16:59:55 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00007-of-00024.gz
+16:59:55 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00009-of-00024.gz
+16:59:55 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00010-of-00024.gz
+16:59:55 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00002-of-00024.gz
+16:59:55 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00008-of-00024.gz
+16:59:55 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00006-of-00024.gz
+16:59:55 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00011-of-00024.gz
+17:00:43 - Fetching file URLs from: https://storage.googleapis.com/books/ngrams/books/20200217/eng/eng-1-ngrams_exports.html
+17:00:43 - Found 24 files matching pattern 1-\d{5}-of-\d{5}\.gz.
+17:00:43 - Starting multiprocessing for file processing.
+17:00:44 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00001-of-00024.gz
+17:00:44 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00000-of-00024.gz
+17:00:44 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00004-of-00024.gz
+17:00:44 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00002-of-00024.gz
+17:00:44 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00006-of-00024.gz
+17:00:44 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00003-of-00024.gz
+17:00:44 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00007-of-00024.gz
+17:00:44 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00005-of-00024.gz
+17:00:44 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00009-of-00024.gz
+17:00:44 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00008-of-00024.gz
+17:00:44 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00010-of-00024.gz
+17:00:44 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00011-of-00024.gz
+17:01:38 - Fetching file URLs from: https://storage.googleapis.com/books/ngrams/books/20200217/eng/eng-1-ngrams_exports.html
+17:01:38 - Found 24 files matching pattern 1-\d{5}-of-\d{5}\.gz.
+17:01:38 - Starting multiprocessing for file processing.
+17:01:38 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00000-of-00024.gz
+17:01:38 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00002-of-00024.gz
+17:01:38 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00007-of-00024.gz
+17:01:38 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00003-of-00024.gz
+17:01:38 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00004-of-00024.gz
+17:01:38 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00006-of-00024.gz
+17:01:38 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00009-of-00024.gz
+17:01:38 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00008-of-00024.gz
+17:01:38 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00005-of-00024.gz
+17:01:38 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00011-of-00024.gz
+17:01:38 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00010-of-00024.gz
+17:01:38 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00001-of-00024.gz
+17:02:12 - Fetching file URLs from: https://storage.googleapis.com/books/ngrams/books/20200217/eng/eng-1-ngrams_exports.html
+17:02:12 - Found 24 files matching pattern 1-\d{5}-of-\d{5}\.gz.
+17:02:14 - Starting multiprocessing for file processing.
+17:02:15 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00004-of-00024.gz
+17:02:15 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00001-of-00024.gz
+17:02:15 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00003-of-00024.gz
+17:02:15 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00002-of-00024.gz
+17:02:15 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00008-of-00024.gz
+17:02:15 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00006-of-00024.gz
+17:02:15 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00009-of-00024.gz
+17:02:15 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00000-of-00024.gz
+17:02:15 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00005-of-00024.gz
+17:02:15 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00011-of-00024.gz
+17:02:15 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00007-of-00024.gz
+17:02:15 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00010-of-00024.gz
+17:02:42 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00000-of-00024.gz: {'invalid_pos_tag': 1159228, 'numeral': 1224594, 'nonalpha': 12688, 'not_in_vocab': 0, 'other': 0}
+17:02:42 - Rejection summary: {"invalid_pos_tag":1159228,"numeral":1224594,"nonalpha":12688,"not_in_vocab":0,"other":0}
+17:02:42 - File 00000-of-00024 is empty. No data written.
+17:02:42 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00012-of-00024.gz
+17:03:02 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00004-of-00024.gz: {'invalid_pos_tag': 1646425, 'numeral': 1731272, 'nonalpha': 0, 'not_in_vocab': 0, 'other': 0}
+17:03:02 - Rejection summary: {"invalid_pos_tag":1646425,"numeral":1731272,"nonalpha":0,"not_in_vocab":0,"other":0}
+17:03:02 - File 00004-of-00024 is empty. No data written.
+17:03:02 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00013-of-00024.gz
+17:03:04 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00005-of-00024.gz: {'invalid_pos_tag': 1652701, 'numeral': 1722869, 'nonalpha': 0, 'not_in_vocab': 0, 'other': 0}
+17:03:04 - Rejection summary: {"invalid_pos_tag":1652701,"numeral":1722869,"nonalpha":0,"not_in_vocab":0,"other":0}
+17:03:04 - File 00005-of-00024 is empty. No data written.
+17:03:05 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00003-of-00024.gz: {'invalid_pos_tag': 1495861, 'numeral': 1585812, 'nonalpha': 0, 'not_in_vocab': 0, 'other': 0}
+17:03:05 - Rejection summary: {"invalid_pos_tag":1495861,"numeral":1585812,"nonalpha":0,"not_in_vocab":0,"other":0}
+17:03:05 - File 00003-of-00024 is empty. No data written.
+17:03:05 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00014-of-00024.gz
+17:03:05 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00015-of-00024.gz
+17:03:11 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00001-of-00024.gz: {'invalid_pos_tag': 1621929, 'numeral': 1723547, 'nonalpha': 0, 'not_in_vocab': 0, 'other': 0}
+17:03:11 - Rejection summary: {"invalid_pos_tag":1621929,"numeral":1723547,"nonalpha":0,"not_in_vocab":0,"other":0}
+17:03:11 - File 00001-of-00024 is empty. No data written.
+17:03:11 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00002-of-00024.gz: {'invalid_pos_tag': 1607970, 'numeral': 1707889, 'nonalpha': 0, 'not_in_vocab': 0, 'other': 0}
+17:03:11 - Rejection summary: {"invalid_pos_tag":1607970,"numeral":1707889,"nonalpha":0,"not_in_vocab":0,"other":0}
+17:03:11 - File 00002-of-00024 is empty. No data written.
+17:03:11 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00016-of-00024.gz
+17:03:11 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00017-of-00024.gz
+17:03:14 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00006-of-00024.gz: {'invalid_pos_tag': 1492207, 'numeral': 778610, 'nonalpha': 87304, 'not_in_vocab': 0, 'other': 0}
+17:03:14 - Rejection summary: {"invalid_pos_tag":1492207,"numeral":778610,"nonalpha":87304,"not_in_vocab":0,"other":0}
+17:03:17 - Finished processing file: 00006-of-00024
+17:03:17 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00018-of-00024.gz
+17:03:29 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00010-of-00024.gz: {'invalid_pos_tag': 1622934, 'numeral': 157576, 'nonalpha': 153845, 'not_in_vocab': 0, 'other': 0}
+17:03:29 - Rejection summary: {"invalid_pos_tag":1622934,"numeral":157576,"nonalpha":153845,"not_in_vocab":0,"other":0}
+17:03:32 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00009-of-00024.gz: {'invalid_pos_tag': 1497717, 'numeral': 162812, 'nonalpha': 120226, 'not_in_vocab': 0, 'other': 0}
+17:03:32 - Rejection summary: {"invalid_pos_tag":1497717,"numeral":162812,"nonalpha":120226,"not_in_vocab":0,"other":0}
+17:03:36 - Finished processing file: 00010-of-00024
+17:03:40 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00007-of-00024.gz: {'invalid_pos_tag': 1640172, 'numeral': 184633, 'nonalpha': 121285, 'not_in_vocab': 0, 'other': 0}
+17:03:40 - Rejection summary: {"invalid_pos_tag":1640172,"numeral":184633,"nonalpha":121285,"not_in_vocab":0,"other":0}
+17:03:42 - Finished processing file: 00009-of-00024
+17:03:42 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00011-of-00024.gz: {'invalid_pos_tag': 1639666, 'numeral': 125443, 'nonalpha': 126072, 'not_in_vocab': 0, 'other': 0}
+17:03:42 - Rejection summary: {"invalid_pos_tag":1639666,"numeral":125443,"nonalpha":126072,"not_in_vocab":0,"other":0}
+17:03:48 - Finished processing file: 00007-of-00024
+17:03:49 - Finished processing file: 00011-of-00024
+17:03:50 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00008-of-00024.gz: {'invalid_pos_tag': 1646321, 'numeral': 161391, 'nonalpha': 125508, 'not_in_vocab': 0, 'other': 0}
+17:03:50 - Rejection summary: {"invalid_pos_tag":1646321,"numeral":161391,"nonalpha":125508,"not_in_vocab":0,"other":0}
+17:03:56 - Finished processing file: 00008-of-00024
+17:04:07 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00012-of-00024.gz: {'invalid_pos_tag': 1504796, 'numeral': 166117, 'nonalpha': 128312, 'not_in_vocab': 0, 'other': 0}
+17:04:07 - Rejection summary: {"invalid_pos_tag":1504796,"numeral":166117,"nonalpha":128312,"not_in_vocab":0,"other":0}
+17:04:13 - Finished processing file: 00012-of-00024
+17:04:27 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00013-of-00024.gz: {'invalid_pos_tag': 1639115, 'numeral': 194405, 'nonalpha': 131207, 'not_in_vocab': 0, 'other': 0}
+17:04:27 - Rejection summary: {"invalid_pos_tag":1639115,"numeral":194405,"nonalpha":131207,"not_in_vocab":0,"other":0}
+17:04:27 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00015-of-00024.gz: {'invalid_pos_tag': 1489107, 'numeral': 140138, 'nonalpha': 164664, 'not_in_vocab': 0, 'other': 0}
+17:04:27 - Rejection summary: {"invalid_pos_tag":1489107,"numeral":140138,"nonalpha":164664,"not_in_vocab":0,"other":0}
+17:04:33 - Finished processing file: 00013-of-00024
+17:04:33 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00014-of-00024.gz: {'invalid_pos_tag': 1639400, 'numeral': 113072, 'nonalpha': 114788, 'not_in_vocab': 0, 'other': 0}
+17:04:33 - Rejection summary: {"invalid_pos_tag":1639400,"numeral":113072,"nonalpha":114788,"not_in_vocab":0,"other":0}
+17:04:36 - Finished processing file: 00015-of-00024
+17:04:36 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00020-of-00024.gz
+17:04:37 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00019-of-00024.gz
+17:04:37 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00023-of-00024.gz
+17:04:38 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00022-of-00024.gz
+17:04:38 - Downloading file: https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00021-of-00024.gz
+17:04:40 - Finished processing file: 00014-of-00024
+17:04:42 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00018-of-00024.gz: {'invalid_pos_tag': 1383607, 'numeral': 207082, 'nonalpha': 140655, 'not_in_vocab': 0, 'other': 0}
+17:04:42 - Rejection summary: {"invalid_pos_tag":1383607,"numeral":207082,"nonalpha":140655,"not_in_vocab":0,"other":0}
+17:04:45 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00016-of-00024.gz: {'invalid_pos_tag': 1492343, 'numeral': 223837, 'nonalpha': 150397, 'not_in_vocab': 0, 'other': 0}
+17:04:45 - Rejection summary: {"invalid_pos_tag":1492343,"numeral":223837,"nonalpha":150397,"not_in_vocab":0,"other":0}
+17:04:48 - Finished processing file: 00018-of-00024
+17:04:49 - Finished processing file: 00016-of-00024
+17:05:41 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00017-of-00024.gz: {'invalid_pos_tag': 1523924, 'numeral': 281704, 'nonalpha': 152450, 'not_in_vocab': 0, 'other': 0}
+17:05:41 - Rejection summary: {"invalid_pos_tag":1523924,"numeral":281704,"nonalpha":152450,"not_in_vocab":0,"other":0}
+17:05:43 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00019-of-00024.gz: {'invalid_pos_tag': 1517984, 'numeral': 243241, 'nonalpha': 205427, 'not_in_vocab': 0, 'other': 0}
+17:05:43 - Rejection summary: {"invalid_pos_tag":1517984,"numeral":243241,"nonalpha":205427,"not_in_vocab":0,"other":0}
+17:05:47 - Finished processing file: 00017-of-00024
+17:05:48 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00020-of-00024.gz: {'invalid_pos_tag': 1517401, 'numeral': 190375, 'nonalpha': 164168, 'not_in_vocab': 0, 'other': 0}
+17:05:48 - Rejection summary: {"invalid_pos_tag":1517401,"numeral":190375,"nonalpha":164168,"not_in_vocab":0,"other":0}
+17:05:54 - Finished processing file: 00019-of-00024
+17:05:54 - Finished processing file: 00020-of-00024
+17:05:56 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00022-of-00024.gz: {'invalid_pos_tag': 1544568, 'numeral': 251831, 'nonalpha': 164639, 'not_in_vocab': 0, 'other': 0}
+17:05:56 - Rejection summary: {"invalid_pos_tag":1544568,"numeral":251831,"nonalpha":164639,"not_in_vocab":0,"other":0}
+17:05:58 - Finished processing file: 00022-of-00024
+17:05:58 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00023-of-00024.gz: {'invalid_pos_tag': 1854571, 'numeral': 202871, 'nonalpha': 602378, 'not_in_vocab': 0, 'other': 0}
+17:05:58 - Rejection summary: {"invalid_pos_tag":1854571,"numeral":202871,"nonalpha":602378,"not_in_vocab":0,"other":0}
+17:06:00 - Finished processing file: 00023-of-00024
+17:06:29 - Rejection counts for file https://storage.googleapis.com/books/ngrams/books/20200217/eng/1-00021-of-00024.gz: {'invalid_pos_tag': 1360768, 'numeral': 269428, 'nonalpha': 132095, 'not_in_vocab': 0, 'other': 0}
+17:06:29 - Rejection summary: {"invalid_pos_tag":1360768,"numeral":269428,"nonalpha":132095,"not_in_vocab":0,"other":0}
+17:06:31 - Finished processing file: 00021-of-00024

@@ -7,6 +7,7 @@ import orjson
 import re
 from tqdm import tqdm 
 from functools import partial
+import multiprocessing
 from multiprocessing import Pool, cpu_count
 from nltk import WordNetLemmatizer
 
@@ -43,6 +44,7 @@ def parse_args():
     parser.add_argument('--processes', type=int, default=cpu_count(), help='Number of processes to use')
     parser.add_argument('--file_range', type=int, nargs=2, default=[0, 23], help='Range of files to process')
     parser.add_argument('--vocab_file', type=str, default=None, help="Path to the frozenset vocabulary file (comma-delimited list of quoted strings).")
+    parser.add_argument('--output_dir', type=str, required=True, help="Where to save the ngram files.")
     parser.add_argument('--overwrite', action='store_true', default=None, help='Overwrite existing output JSONLs')
     parser.add_argument('--save_empty', action='store_true', default=False, help='Save empty files.')
     parser.add_argument('--test_file', type=str, default=None, help="Path to an test file.")
@@ -230,6 +232,8 @@ def process_all_files(ngram_repo_url, file_pattern, output_dir, vocab_set, proce
 
 
 if __name__ == "__main__":
+    multiprocessing.set_start_method("fork")  # Use "fork" for faster process spawning
+    
     args = parse_args()
     
     if args.vocab_file and args.ngram_size == 1:
@@ -240,7 +244,7 @@ if __name__ == "__main__":
 
     ngram_repo_url = f"https://storage.googleapis.com/books/ngrams/books/20200217/eng/eng-{args.ngram_size}-ngrams_exports.html"
     file_pattern = rf"{args.ngram_size}-\d{{5}}-of-\d{{5}}\.gz"
-    output_dir = f"/vast/edk202/NLP_corpora/Google_Books/20200217/eng/{args.ngram_size}gram_files/orig"
+    output_dir = os.path.join(f"{args.output_dir}", f"{args.ngram_size}gram_files/orig")
 
     if args.vocab_file:
         vocab_set = load_vocab(args.vocab_file)
