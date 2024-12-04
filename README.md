@@ -10,3 +10,5 @@ I began this project because I wanted to study the evolution of group stereotype
 6. _Indexing_ ngrams by giving each a unique number.
 7. Create a _vocabulary file_ of the _N_ most common unigrams (1-grams) in the corpus, which can be used to prefilter a set of multigrams.
 8. Create _yearly files_ containing the ngrams and their number of occurrences in each year of the corpus.
+
+The raw ngram files, even after prefiltering, are large and numerous. Given the demands on storage space, RAM, and processors, **the code is intended for use on an HPC cluster**. I've incorporated parallel processing where possible and attempted to make the code relatively memory-efficient—although some scripts still use a great deal of RAM. In future updates, I'll try to optimize the code for smaller systems.
