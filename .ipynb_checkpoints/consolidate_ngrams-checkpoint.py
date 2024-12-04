@@ -10,7 +10,7 @@ def consolidate_ngrams(input_file, output_file):
 
         previous_ngram = None
         previous_data = None
-        progress = tqdm(infile, desc="Processing n-grams", unit="lines")
+        progress = tqdm(infile, desc="Lines", unit="lines")
 
         for line in progress:
             # Parse the current line
@@ -46,7 +46,7 @@ def consolidate_ngrams(input_file, output_file):
 
 def main():
     """Main function to parse arguments and run the consolidation process."""
-    parser = argparse.ArgumentParser(description="Consolidate consecutive n-grams by summing frequencies.")
+    parser = argparse.ArgumentParser(description="Consolidate consecutive ngrams by summing frequencies.")
     parser.add_argument('--input_file', type=str, required=True, help="Path to the input JSONL file.")
     parser.add_argument('--output_file', type=str, required=True, help="Path to the output JSONL file.")
     args = parser.parse_args()

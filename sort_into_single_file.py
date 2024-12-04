@@ -70,11 +70,6 @@ def merge_sorted_files(sorted_files, temp_dir):
     open_files = []
     total_lines = 0  # Total lines to process
 
-    # First, calculate the total number of lines in all sorted files for progress
-    for file_path in sorted_files:
-        with open(file_path, 'r') as file:
-            total_lines += sum(1 for _ in file)
-
     # Open all sorted files and prepare the heap
     try:
         for file_index, file_path in enumerate(sorted_files):
@@ -90,7 +85,7 @@ def merge_sorted_files(sorted_files, temp_dir):
             output_file_path = output_file.name
 
             # Initialize progress bar
-            with tqdm(total=total_lines, desc="Lines", unit="line") as pbar:
+            with tqdm(desc="Lines", unit="line") as pbar:
                 while heap:
                     # Pop the smallest item from the heap (sorted by the line itself)
                     line, file_index = heapq.heappop(heap)
