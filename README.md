@@ -10,7 +10,7 @@ I began this project because I wanted to study the evolution of group stereotype
 6. ```consolidate_ ngrams.py``` consolidates duplicates created during postfiltering by summing their frequencies and concatenates ngrams into a single file.
 7. ```index_ngrams.py``` assigns all ngrams a unique number.
 8. ```make_vocab_list.py``` generates a "vocabulary file" containing the _N_ most common unigrams (1-grams) in the corpus, which can be used to prefilter a set of multigrams (see step 1).
-9. Create _yearly files_ containing the ngrams and their number of occurrences in each year of the corpus.
+9. ```make_yearly_files.py``` generates yearly files containing ngrams and their number of occurrences in each year of the corpus.
 
 I've included a _run_ script containing a sample workflow that combines all of these steps.
 
