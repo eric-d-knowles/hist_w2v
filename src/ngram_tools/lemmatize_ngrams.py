@@ -9,7 +9,7 @@ import orjson
 from nltk.stem import WordNetLemmatizer
 from tqdm import tqdm
 
-from ngram_embeddings.helpers.file_handler import FileHandler
+from ngram_tools.helpers.file_handler import FileHandler
 
 
 def parse_args():

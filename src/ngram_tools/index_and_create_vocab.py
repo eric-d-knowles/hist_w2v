@@ -10,7 +10,7 @@ import orjson
 import shutil
 
 
-from ngram_embeddings.helpers.file_handler import FileHandler
+from ngram_tools.helpers.file_handler import FileHandler
 
 
 FIXED_DESC_LENGTH = 15

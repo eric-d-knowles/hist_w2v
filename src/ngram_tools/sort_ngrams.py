@@ -12,7 +12,7 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from ngram_embeddings.helpers.file_handler import FileHandler
+from ngram_tools.helpers.file_handler import FileHandler
 
 
 FIXED_DESC_LENGTH = 15
@@ -430,8 +430,8 @@ def iterative_merge(
 
     workers = os.cpu_count()  # Force to max CPU count inside this function
 
-    os.makedirs(tmp_dir, exist_ok=True)
-    os.makedirs(os.path.dirname(merged_path), exist_ok=True)
+    os.makedirs(tmp_dir, exist_ok=True)  # Make temp dir for initial sort
+    os.makedirs(os.path.dirname(merged_path), exist_ok=True)  # Make corpus dir
 
     # Iteration 0: the individually sorted files
     iteration_0_files = [
@@ -546,7 +546,7 @@ def iterative_merge(
         current_iter_files = chunk_output_paths
         iteration += 1
 
-        return complete
+    return complete
 
 
 def remove_iteration_files(tmp_dir, iteration):

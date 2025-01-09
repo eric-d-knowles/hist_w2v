@@ -8,7 +8,7 @@ from pathlib import Path
 import orjson
 from tqdm import tqdm
 
-from ngram_embeddings.helpers.file_handler import FileHandler
+from ngram_tools.helpers.file_handler import FileHandler
 
 
 def parse_args():

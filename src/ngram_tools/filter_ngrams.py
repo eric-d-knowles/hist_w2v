@@ -10,7 +10,7 @@ import nltk
 from nltk.corpus import stopwords
 from tqdm import tqdm
 
-from ngram_embeddings.helpers.file_handler import FileHandler
+from ngram_tools.helpers.file_handler import FileHandler
 
 
 nltk.download('stopwords', quiet=True)

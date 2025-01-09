@@ -3,20 +3,13 @@ import sys
 import argparse
 from tqdm import tqdm
 from datetime import datetime
-
-from ngram_embeddings.helpers.file_handler import FileHandler
-
-
-FIXED_DESC_LENGTH = 15
-BAR_FORMAT = (
-    "{desc:<15} |{bar:50}| {percentage:5.1f}% {n_fmt:<12}/{total_fmt:<12} \
-    [{elapsed}<{remaining}, {rate_fmt}]"
-)
+from multiprocessing import Pool
+from ngram_tools.helpers.file_handler import FileHandler
 
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Sort and merge files in parallel."
+        description="Sort, merge, and consolidate files in parallel."
     )
 
     parser.add_argument('--ngram_size',
@@ -36,170 +29,241 @@ def parse_args():
                         action='store_true',
                         default=False,
                         help='Overwrite existing files?')
+    parser.add_argument('--lines_per_chunk',
+                        type=int,
+                        default=10_000,
+                        help='Number of lines per chunk.')
+    parser.add_argument('--workers',
+                        type=int,
+                        default=os.cpu_count(),
+                        help='Number of worker processes to use.')
 
     return parser.parse_args()
 
 
 def get_merged_path(merged_dir):
     """
-    Look for exactly one file containing '-merge' in its name within `merged_dir`.
-    Returns the full path to that file if found, otherwise prints an error and exits.
+    Look for exactly one file containing '-merged' in its name within
+    `merged_dir`. Returns the full path to that file if found, otherwise
+    prints an error and exits.
     """
-    # Collect all files containing '-merge' in the name
     merged_files = [
         f for f in os.listdir(merged_dir)
-        if '-merge' in f and os.path.isfile(os.path.join(merged_dir, f))
+        if '-merged' in f and os.path.isfile(os.path.join(merged_dir, f))
     ]
 
     if len(merged_files) == 0:
-        print("Error: No file with '-merge' was found in the directory:")
+        print("Error: No file with '-merged' found in the directory:")
         print(f"  {merged_dir}")
         sys.exit(1)
     elif len(merged_files) > 1:
-        print("Error: Multiple files with '-merge' were found. "
+        print("Error: Multiple files with '-merged' were found. "
               "The script doesn't know which one to use:")
         for file_name in merged_files:
             print(f"  {file_name}")
         sys.exit(1)
     else:
-        # Exactly one matching file
         return os.path.join(merged_dir, merged_files[0])
 
 
 def set_info(proj_dir, ngram_size, compress):
     merged_dir = os.path.join(proj_dir, f'{ngram_size}gram_files/6corpus')
-
     merged_path = get_merged_path(merged_dir)
-
     consolidated_path = os.path.join(
         merged_dir, f"{ngram_size}gram-corpus.jsonl" + (
             '.lz4' if compress else ''
         )
     )
+    return merged_path, consolidated_path
 
-    return (merged_path, consolidated_path)
+
+def create_temp_dir(ngram_size, proj_dir):
+    temp_dir_path = (
+        os.path.join(proj_dir, f"{ngram_size}gram_files", "temp_chunks")
+    )
+    os.makedirs(temp_dir_path, exist_ok=True)
+    return temp_dir_path
 
 
-def print_info(start_time, merged_path, consolidated_path, ngram_size, compress,
-               overwrite):
+def print_info(
+    start_time,
+    merged_path,
+    consolidated_path,
+    temp_dir_path,
+    ngram_size,
+    compress,
+    overwrite
+):
     print(f'\033[31mStart Time:                {start_time}\n\033[0m')
     print('\033[4mConsolidation Info\033[0m')
     print(f'Merged file:               {merged_path}')
     print(f'Corpus file:               {consolidated_path}')
+    print(f'Temporary file:            {temp_dir_path}')
+    print(f'Temporary directory:       {temp_dir_path}')
     print(f'Ngram size:                {ngram_size}')
     print(f'Compress output files:     {compress}')
     print(f'Overwrite existing files:  {overwrite}\n')
 
 
-def create_progress_bar(total, description, unit=''):
-    return tqdm(
-        file=sys.stdout,
-        total=total,
-        desc=description.ljust(FIXED_DESC_LENGTH),
-        leave=True,
-        dynamic_ncols=False,
-        ncols=100,
-        unit=unit,
-        colour='green',
-        bar_format=BAR_FORMAT
-    )
+def create_and_process_chunks(
+    input_path, lines_per_chunk, temp_dir, compress, workers
+):
+    """
+    Splits the file into chunks, saves them, and processes them in parallel.
+    Returns a list of consolidated chunk paths.
+    """
+    input_handler = FileHandler(input_path)
+    consolidated_chunk_paths = []
+
+    with input_handler.open() as f, tqdm(
+        desc="Creating and Processing Chunks",
+        unit=" chunks",
+        dynamic_ncols=True
+    ) as pbar:
+        chunk = []
+        last_ngram = None
+        with Pool(processes=workers) as pool:
+            results = []
+
+            for i, line in enumerate(f):
+                entry = input_handler.deserialize(line)
+                current_ngram = entry['ngram']
+
+                if len(chunk) >= (
+                    lines_per_chunk and current_ngram != last_ngram
+                ):
+                    chunk_path = os.path.join(
+                        temp_dir, f'chunk_{i}.jsonl' + (
+                            '.lz4' if compress else ''
+                        )
+                    )
+                    consolidated_path = (
+                        chunk_path.replace(".jsonl", "_consolidated.jsonl")
+                    )
+                    results.append(pool.apply_async(
+                        consolidate_chunk, args=(
+                            chunk, consolidated_path, compress
+                        )
+                    ))
+                    chunk = []
+                    pbar.update(1)
+
+                chunk.append(line)
+                last_ngram = current_ngram
+
+            # Handle the last chunk
+            if chunk:
+                chunk_path = os.path.join(
+                    temp_dir, 'chunk_final.jsonl' + (
+                        '.lz4' if compress else ''
+                    )
+                )
+                consolidated_path = (
+                    chunk_path.replace(".jsonl", "_consolidated.jsonl")
+                )
+                results.append(pool.apply_async(
+                    consolidate_chunk, args=(
+                        chunk, consolidated_path, compress
+                    )
+                ))
+                pbar.update(1)
+
+            # Collect results
+            consolidated_chunk_paths = [res.get() for res in results]
+
+    return consolidated_chunk_paths
 
 
-def count_lines(merged_path):
-    input_handler = FileHandler(merged_path)
-
-    with input_handler.open() as infile:
-        line_count = sum(1 for _ in infile)
-    return line_count
-
-
-def consolidate_duplicates(input_path, output_path, total_lines, compress,
-                           overwrite):
-    input_handler = FileHandler(input_path, is_output=False)
+def consolidate_chunk(lines, output_path, compress):
+    """
+    Consolidates duplicates in a single chunk and saves it to a new file.
+    """
     output_handler = FileHandler(
         output_path, is_output=True, compress=compress
     )
+    consolidated = {}
 
-    if not overwrite and os.path.exists(output_handler.path):
-        print(f'File {output_path} already exists, '
-              'and overwrite is not specified')
-        return
+    for line in lines:
+        entry = output_handler.deserialize(line)
+        ngram = entry['ngram']
+        if ngram in consolidated:
+            consolidated[ngram]['freq_tot'] += entry['freq_tot']
+            consolidated[ngram]['doc_tot'] += entry['doc_tot']
+            for year, freq in entry['freq'].items():
+                consolidated[ngram]['freq'][year] = (
+                    consolidated[ngram]['freq'].get(year, 0) + freq
+                )
+            for year, doc in entry['doc'].items():
+                consolidated[ngram]['doc'][year] = (
+                    consolidated[ngram]['doc'].get(year, 0) + doc
+                )
+        else:
+            consolidated[ngram] = entry
 
-    line_count_out = 0
-    BATCH_SIZE = 10_000  # Adjust as needed
+    with output_handler.open() as outfile:
+        for ngram, data in consolidated.items():
+            outfile.write(output_handler.serialize(data))
 
-    with input_handler.open() as infile, output_handler.open() as outfile, \
-         create_progress_bar(
-             total=total_lines, description="Consolidating", unit='lines'
-         ) as pbar:
-        current_entry = None
+    return output_path
 
-        count = 0  # Track how many lines we've processed so far
-        for line in infile:
-            entry = input_handler.deserialize(line)
 
-            if current_entry is None:
-                current_entry = entry
-            elif entry['ngram'] == current_entry['ngram']:
-                # Merge duplicate entries
-                current_entry['freq_tot'] += entry['freq_tot']
-                current_entry['doc_tot'] += entry['doc_tot']
-                for year, freq_val in entry['freq'].items():
-                    current_entry['freq'][year] = (
-                        current_entry['freq'].get(year, 0) + freq_val
-                    )
-                for year, doc_val in entry['doc'].items():
-                    current_entry['doc'][year] = (
-                        current_entry['doc'].get(year, 0) + doc_val
-                    )
-            else:
-                # Write the previous consolidated entry
-                outfile.write(output_handler.serialize(current_entry))
-                line_count_out += 1
-                current_entry = entry
+def merge_chunks(chunk_files, final_output_path, compress):
+    """
+    Merges all consolidated chunks into the final output file with dynamic
+    progress tracking.
+    """
+    output_handler = FileHandler(
+        final_output_path, is_output=True, compress=compress
+    )
 
-            count += 1
-            if count % BATCH_SIZE == 0:
-                pbar.update(BATCH_SIZE)
-
-        # Write the last accumulated entry
-        if current_entry is not None:
-            outfile.write(output_handler.serialize(current_entry))
-            line_count_out += 1
-
-        # Update the progress bar for the leftover lines
-        pbar.update(count % BATCH_SIZE)
-
-    return line_count_out
+    with output_handler.open() as outfile, tqdm(
+        desc="Merging Chunks", unit=" chunks", dynamic_ncols=True
+    ) as pbar:
+        for chunk_path in sorted(chunk_files):
+            handler = FileHandler(chunk_path)
+            with handler.open() as infile:
+                for line in infile:
+                    outfile.write(line)
+                pbar.update(1)
 
 
 def consolidate_duplicate_ngrams(
     ngram_size,
     proj_dir,
     compress=False,
-    overwrite=False
+    overwrite=False,
+    lines_per_chunk=10_000,
+    workers=os.cpu_count()
 ):
+    """
+    Main function that orchestrates chunk creation, consolidation, and merging.
+    """
     start_time = datetime.now()
 
-    (merged_path, consolidated_path) = set_info(proj_dir, ngram_size, compress)
+    merged_path, consolidated_path = set_info(proj_dir, ngram_size, compress)
+    temp_dir_path = create_temp_dir(ngram_size, proj_dir)
 
     print_info(
         start_time,
         merged_path,
         consolidated_path,
+        temp_dir_path,
         ngram_size,
         compress,
-        overwrite,
+        overwrite
     )
 
-    line_count_in = count_lines(merged_path)
+    if not os.path.exists(merged_path):
+        print(f"Input file {merged_path} does not exist.")
+        sys.exit(1)
 
-    line_count_out = consolidate_duplicates(
-        merged_path, consolidated_path, line_count_in, compress, overwrite
+    # Phase 1: Create and Process Chunks
+    consolidated_chunk_paths = create_and_process_chunks(
+        merged_path, lines_per_chunk, temp_dir_path, compress, workers
     )
 
-    print(f'\nLines before consolidation:  {line_count_in}')
-    print(f'Lines after consolidation:   {line_count_out}')
+    # Phase 2: Merge Consolidated Chunks
+    merge_chunks(consolidated_chunk_paths, consolidated_path, compress)
 
     end_time = datetime.now()
     print(f'\033[31m\nEnd Time:                  {end_time}\033[0m')
@@ -213,6 +277,8 @@ if __name__ == "__main__":
     consolidate_duplicate_ngrams(
         ngram_size=args.ngram_size,
         proj_dir=args.proj_dir,
+        compress=args.compress,
         overwrite=args.overwrite,
-        compress=args.compress
+        lines_per_chunk=args.lines_per_chunk,
+        workers=args.workers
     )

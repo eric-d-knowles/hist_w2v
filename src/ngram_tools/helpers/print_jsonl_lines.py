@@ -2,7 +2,7 @@ import os
 import argparse
 import orjson
 
-from ngram_embeddings.helpers.file_handler import FileHandler
+from ngram_tools.helpers.file_handler import FileHandler
 
 
 def print_jsonl_lines(file_path, start_line=1, end_line=5, parse_json=False):

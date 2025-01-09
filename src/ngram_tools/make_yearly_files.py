@@ -6,7 +6,7 @@ from multiprocessing import Pool
 from tqdm import tqdm
 from datetime import datetime
 
-from ngram_embeddings.helpers.file_handler import FileHandler
+from ngram_tools.helpers.file_handler import FileHandler
 
 
 FIXED_DESC_LENGTH = 15

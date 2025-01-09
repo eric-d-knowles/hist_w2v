@@ -4,7 +4,7 @@ import lz4.frame
 import orjson
 from tqdm import tqdm
 
-from ngram_embeddings.helpers.file_handler import FileHandler
+from ngram_tools.helpers.file_handler import FileHandler
 
 
 def is_file_sorted(file_handler, field, sort_order):
