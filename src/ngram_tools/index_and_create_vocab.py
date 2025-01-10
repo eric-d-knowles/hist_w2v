@@ -22,7 +22,7 @@ BAR_FORMAT = (
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Sort consolidated file by freq_tot in descending order, "
+        description="Sort corpus file by freq_tot in descending order, "
                     "index the ngrams, and optionally create a vocab file."
     )
 
@@ -54,63 +54,75 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_consolidated_path(consolidated_dir):
+def get_corpus_path(corpus_dir):
     """
-    Look for exactly one file containing '-consolidated' in its name within
-    `consolidated_dir`. Returns the full path to that file if found, otherwise
+    Look for exactly one file containing '-corpus' in its name within
+    `corpus_dir`. Returns the full path to that file if found, otherwise
     prints an error and exits.
     """
-    # Collect all files containing '--consolidated' in the name
-    consolidated_files = [
-        f for f in os.listdir(consolidated_dir)
-        if '-consolidated' in f and os.path.isfile(
-            os.path.join(consolidated_dir, f)
+    # Collect all files containing '--corpus' in the name
+    corpus_files = [
+        f for f in os.listdir(corpus_dir)
+        if '-corpus' in f and os.path.isfile(
+            os.path.join(corpus_dir, f)
         )
     ]
 
-    if len(consolidated_files) == 0:
-        print("Error: No file with '-consolidated' found in the directory:")
-        print(f"  {consolidated_dir}")
+    if len(corpus_files) == 0:
+        print("Error: No file with '-corpus' found in the directory:")
+        print(f"  {corpus_dir}")
         sys.exit(1)
-    elif len(consolidated_files) > 1:
-        print("Error: Multiple files with '-consolidated' were found. "
+    elif len(corpus_files) > 1:
+        print("Error: Multiple files with '-corpus' were found. "
               "The script doesn't know which one to use:")
-        for file_name in consolidated_files:
+        for file_name in corpus_files:
             print(f"  {file_name}")
         sys.exit(1)
     else:
         # Exactly one matching file
-        return os.path.join(consolidated_dir, consolidated_files[0])
+        return os.path.join(corpus_dir, corpus_files[0])
 
 
 def set_info(proj_dir, ngram_size, compress):
-    consolidated_dir = os.path.join(
+    corpus_dir = os.path.join(
         proj_dir,
         f'{ngram_size}gram_files/6corpus'
     )
-    consolidated_path = get_consolidated_path(consolidated_dir)
+    corpus_path = get_corpus_path(corpus_dir)
 
     indexed_path = os.path.join(
-        consolidated_dir, f"{ngram_size}gram-indexed.jsonl" + (
+        corpus_dir, f"{ngram_size}gram-indexed.jsonl" + (
             '.lz4' if compress else ''
         )
     )
 
-    return (consolidated_path, indexed_path)
+    match_path = os.path.join(
+        corpus_dir, f"{ngram_size}1ram-corpus-vocab_list_match.txt"
+    )
+
+    lookup_path = os.path.join(
+        corpus_dir, f"{ngram_size}gram-corpus-vocab_list_lookup.jsonl"
+    )
 
 
-def print_info(start_time, consolidated_path, indexed_path, ngram_size,
-               workers, compress, overwrite, vocab_n):
+    return (corpus_path, indexed_path, match_path, lookup_path)
+
+
+def print_info(start_time, corpus_path, indexed_path, ngram_size,
+               workers, compress, overwrite, vocab_n, match_path,
+               lookup_path):
     print(f'\033[31mStart Time:                {start_time}\n\033[0m')
     print('\033[4mIndexing Info\033[0m')
-    print(f'Consolidated file:         {consolidated_path}')
+    print(f'Corpus file:               {corpus_path}')
     print(f'Indexed file:              {indexed_path}')
     print(f'Ngram size:                {ngram_size}')
     print(f'Number of workers:         {workers}')
     print(f'Compress output files:     {compress}')
     print(f'Overwrite existing files:  {overwrite}')
     if vocab_n is not None and vocab_n > 0:
-        print(f'Vocab size (top N):        {vocab_n}\n')
+        print(f'Vocab size (top N):        {vocab_n}')
+        print(f'Match File:                {match_path}')
+        print(f'Lookup File:               {lookup_path}')
 
 
 def create_progress_bar(total, description, unit=''):
@@ -163,7 +175,7 @@ def chunk_sort(args):
 
 
 def external_sort_descending_by_freq(
-    consolidated_path,
+    corpus_path,
     workers,
     chunk_size=100000,
     compress=False
@@ -175,7 +187,7 @@ def external_sort_descending_by_freq(
 
     # Step 1: Count total lines
     total_lines = 0
-    in_count_handler = FileHandler(consolidated_path, is_output=False)
+    in_count_handler = FileHandler(corpus_path, is_output=False)
     with in_count_handler.open() as count_f:
         for _ in count_f:
             total_lines += 1
@@ -185,8 +197,8 @@ def external_sort_descending_by_freq(
     current_chunk = []
     chunk_idx = 0
 
-    in_handler = FileHandler(consolidated_path, is_output=False)
-    out_handler = FileHandler(consolidated_path, is_output=True, compress=True)
+    in_handler = FileHandler(corpus_path, is_output=False)
+    out_handler = FileHandler(corpus_path, is_output=True, compress=True)
 
     with in_handler.open() as infile, create_progress_bar(
         total_lines, 'Chunking', 'lines'
@@ -222,7 +234,7 @@ def external_sort_descending_by_freq(
 
     generators = [file_generator(fp) for fp in sorted_chunk_paths]
 
-    merged_sorted_path = consolidated_path.replace('.jsonl', '-desc.jsonl')
+    merged_sorted_path = corpus_path.replace('.jsonl', '-desc.jsonl')
 
     # Overwrite if necessary
     if os.path.exists(merged_sorted_path):
@@ -290,7 +302,9 @@ def index_ngrams(
 
 def create_vocab_files(
     indexed_path,
-    vocab_n
+    vocab_n,
+    match_path,
+    lookup_path
 ):
     """
     Create two output files for the top `vocab_n` ngrams:
@@ -309,9 +323,7 @@ def create_vocab_files(
             top_ngrams.append(obj)
 
     # Write match file
-    vocab_match_path = indexed_path.replace('-indexed.jsonl',
-                                            '-vocab_list_match.txt')
-    out_match_handler = FileHandler(vocab_match_path, is_output=True,
+    out_match_handler = FileHandler(match_path, is_output=True,
                                     compress=False)
     with out_match_handler.open() as txtfile:
         for entry in top_ngrams:
@@ -319,9 +331,7 @@ def create_vocab_files(
             txtfile.write(entry['ngram'] + '\n')
 
     # Write lookup file
-    vocab_lookup_path = indexed_path.replace('-indexed.jsonl',
-                                             '-vocab_list_lookup.jsonl')
-    out_lookup_handler = FileHandler(vocab_lookup_path, is_output=True,
+    out_lookup_handler = FileHandler(lookup_path, is_output=True,
                                      compress=False)
     with out_lookup_handler.open() as jsonfile:
         for entry in top_ngrams:
@@ -343,13 +353,13 @@ def index_and_create_vocab_files(
 ):
     start_time = datetime.now()
 
-    (consolidated_path, indexed_path) = set_info(
+    (corpus_path, indexed_path, match_path, lookup_path) = set_info(
         proj_dir, ngram_size, compress
     )
 
     print_info(
         start_time,
-        consolidated_path,
+        corpus_path,
         indexed_path,
         ngram_size,
         workers,
@@ -360,7 +370,7 @@ def index_and_create_vocab_files(
 
     # 1) Sort descending by freq_tot
     sorted_desc_file = external_sort_descending_by_freq(
-        consolidated_path,
+        corpus_path,
         workers=workers,
         compress=compress
     )
@@ -374,7 +384,7 @@ def index_and_create_vocab_files(
 
     # 3) Optionally, create vocab files
     if vocab_n is not None and vocab_n > 0:
-        create_vocab_files(indexed_file, vocab_n)
+        create_vocab_files(indexed_file, vocab_n, match_path, lookup_path)
 
     # Remove the intermediate descending-sorted file
     if os.path.exists(sorted_desc_file):

@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+import shutil
 from tqdm import tqdm
 from datetime import datetime
 from multiprocessing import Pool
@@ -115,36 +116,47 @@ def create_and_process_chunks(
     input_handler = FileHandler(input_path)
     consolidated_chunk_paths = []
 
-    with input_handler.open() as f, tqdm(
+    with input_handler.open() as f, tqdm(  # Open merged file
         desc="Creating and Processing Chunks",
         unit=" chunks",
         dynamic_ncols=True
     ) as pbar:
-        chunk = []
+        chunk = []  # Initialize an empty chunk
         last_ngram = None
+
         with Pool(processes=workers) as pool:
             results = []
 
             for i, line in enumerate(f):
+                # Get a line and extract the ngram
                 entry = input_handler.deserialize(line)
                 current_ngram = entry['ngram']
 
-                if len(chunk) >= (
-                    lines_per_chunk and current_ngram != last_ngram
+                # Check if it's time to consolidate and write a chunk
+                if (
+                    len(chunk) >= lines_per_chunk and
+                    current_ngram != last_ngram
                 ):
                     chunk_path = os.path.join(
                         temp_dir, f'chunk_{i}.jsonl' + (
                             '.lz4' if compress else ''
                         )
                     )
+
+                    # Make a name for the consolidated chunk
                     consolidated_path = (
                         chunk_path.replace(".jsonl", "_consolidated.jsonl")
                     )
-                    results.append(pool.apply_async(
-                        consolidate_chunk, args=(
-                            chunk, consolidated_path, compress
+
+                    # Give chunk to an available worker
+                    results.append(
+                        pool.apply_async(
+                            consolidate_chunk, args=(
+                                chunk, consolidated_path, compress
+                            )
                         )
-                    ))
+                    )
+
                     chunk = []
                     pbar.update(1)
 
@@ -264,6 +276,9 @@ def consolidate_duplicate_ngrams(
 
     # Phase 2: Merge Consolidated Chunks
     merge_chunks(consolidated_chunk_paths, consolidated_path, compress)
+
+    # Delete temporary files and directory
+    shutil.rmtree(temp_dir_path)
 
     end_time = datetime.now()
     print(f'\033[31m\nEnd Time:                  {end_time}\033[0m')
