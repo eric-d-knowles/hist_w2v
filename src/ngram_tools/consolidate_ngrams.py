@@ -5,6 +5,7 @@ import shutil
 from tqdm import tqdm
 from datetime import datetime
 from multiprocessing import Pool
+
 from ngram_tools.helpers.file_handler import FileHandler
 
 

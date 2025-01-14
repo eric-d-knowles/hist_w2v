@@ -3,7 +3,7 @@ import os
 import sys
 import shutil
 import uuid
-import gc
+from collections import defaultdict
 from datetime import datetime
 from multiprocessing import Pool
 from tqdm import tqdm
@@ -158,6 +158,34 @@ def process_ngram_line(line):
     return yearly_data
 
 
+def chunk_generator(infile, chunk_size, pbar, temp_dir, compress):
+    """
+    Yields one chunk at a time (plus metadata), so we never store all chunks in memory.
+    """
+    chunk_buffer = []
+    chunk_id = 0
+    for line in infile:
+        pbar.update(1)     # Update progress bar for each line read
+        chunk_buffer.append(line)
+
+        if len(chunk_buffer) >= chunk_size:
+            yield (chunk_buffer, chunk_id, temp_dir, compress)
+            chunk_buffer = []
+            chunk_id += 1
+
+    # Yield any leftover lines as a final chunk
+    if chunk_buffer:
+        yield (chunk_buffer, chunk_id, temp_dir, compress)
+
+
+def process_chunk_temp_wrapper(args):
+    """
+    Unpack the tuple and call process_chunk_temp(chunk, chunk_id, temp_dir, compress).
+    """
+    chunk, chunk_id, temp_dir, compress = args
+    return process_chunk_temp(chunk, chunk_id, temp_dir, compress)
+
+
 def process_chunk_temp(chunk, chunk_id, temp_dir, compress):
     """
     Process a chunk of lines in memory and write results to worker-specific,
@@ -184,54 +212,67 @@ def process_chunk_temp(chunk, chunk_id, temp_dir, compress):
                 f.write(serialized_line)
 
 
+def merge_one_year(args):
+    """
+    Merges all chunk files for a single 'year' into one final file at 'final_path'.
+    Returns the 'year' or some status so we can update progress in the main process.
+    """
+    year, file_list, final_path, compress, overwrite = args
+
+    # If user doesn't want to overwrite existing files, skip
+    if not overwrite and os.path.exists(final_path):
+        return year  # or return None, etc.
+
+    # Merge all chunk files for this year
+    output_handler = FileHandler(final_path, is_output=True, compress=compress)
+    with output_handler.open() as out_f:
+        for tmp_file in file_list:
+            input_handler = FileHandler(tmp_file)
+            with input_handler.open() as in_f:
+                shutil.copyfileobj(in_f, out_f)
+
+    return year
+
+
 def merge_temp_files(temp_dir, final_dir, compress, overwrite):
     """
     Merge all per-chunk temp files for each year into a single final
     file, e.g. "1987.jsonl" (or "1987.jsonl.lz4" if compressed).
+    Now parallelized per year.
     """
     print("\nMerging temporary files into yearly files:")
 
-    if compress:
-        chunk_ext = ".jsonl.lz4"
-    else:
-        chunk_ext = ".jsonl"
+    # Decide on chunk-file extension
+    chunk_ext = ".jsonl.lz4" if compress else ".jsonl"
 
-    all_temp_files = [
-        f for f in os.listdir(temp_dir)
-        if f.endswith(chunk_ext)
-    ]
+    # Gather all chunk files
+    all_temp_files = [f for f in os.listdir(temp_dir) if f.endswith(chunk_ext)]
 
-    from collections import defaultdict
+    # Group them by the year prefix
     year_to_tempfiles = defaultdict(list)
     for filename in all_temp_files:
         year = filename.split("_chunk-")[0]
         year_to_tempfiles[year].append(os.path.join(temp_dir, filename))
-    num_unique_years = len(year_to_tempfiles)
 
     os.makedirs(final_dir, exist_ok=True)
+    num_unique_years = len(year_to_tempfiles)
 
+    # Build tasks = list of (year, file_list, final_path, compress, overwrite)
+    tasks = []
+    for year, file_list in year_to_tempfiles.items():
+        final_name = f'{year}.jsonl' + ('.lz4' if compress else '')
+        final_path = os.path.join(final_dir, final_name)
+        tasks.append((year, file_list, final_path, compress, overwrite))
+
+    # Use a Pool of workers to merge different years in parallel
     with create_progress_bar(
         description="Years merged",
         unit=" years",
-        total=len(year_to_tempfiles)
-    ) as pbar:
-        for year, file_list in year_to_tempfiles.items():
-            final_name = f'{year}.jsonl' + ('.lz4' if compress else '')
-            final_path = os.path.join(final_dir, final_name)
-
-            if not overwrite and os.path.exists(final_path):
-                continue
-
-            output_handler = FileHandler(
-                final_path,
-                is_output=True,
-                compress=compress
-            )
-            with output_handler.open() as out_f:
-                for tmp_file in file_list:
-                    input_handler = FileHandler(tmp_file)
-                    with input_handler.open() as in_f:
-                        shutil.copyfileobj(in_f, out_f)
+        total=num_unique_years
+    ) as pbar, Pool() as pool:
+        # imap_unordered yields results as soon as each worker finishes
+        for _ in pool.imap_unordered(merge_one_year, tasks):
+            # Each time we get a result (a 'year' merged), update the bar
             pbar.update(1)
 
 
@@ -244,48 +285,46 @@ def process_corpus_file(
     overwrite=False
 ):
     """
-    Splits a corpus file into yearly n-gram files using a temp-file approach.
+    Splits a corpus file into yearly n-gram files using a temp-file approach,
+    but uses a generator so we don't keep all chunks in memory.
     """
     temp_dir = os.path.join(yearly_dir, f"temp_{uuid.uuid4().hex}")
     os.makedirs(temp_dir, exist_ok=True)
 
     input_handler = FileHandler(corpus_path)
-    chunk_buffer = []
-    chunk_id = 0
 
+    # -- Open the input file and a progress bar --
     with input_handler.open() as infile, tqdm(
-        desc="Reading and chunking",
+        desc="Reading & chunking",
         unit=" lines",
         dynamic_ncols=True
     ) as pbar, Pool(processes=workers) as pool:
-        for line in infile:
-            pbar.update(1)
-            chunk_buffer.append(line)
-            if len(chunk_buffer) >= chunk_size:
-                pool.apply(
-                    process_chunk_temp,
-                    args=(chunk_buffer, chunk_id, temp_dir, compress)
-                )
-                chunk_buffer = []
-                chunk_id += 1
-                gc.collect()
 
-        if chunk_buffer:
-            pool.apply(
-                process_chunk_temp,
-                args=(chunk_buffer, chunk_id, temp_dir)
-            )
-            chunk_buffer = []
-            chunk_id += 1
-            gc.collect()
+        # 1) Create the generator so it yields chunks on-the-fly
+        gen = chunk_generator(
+            infile=infile,
+            chunk_size=chunk_size,
+            pbar=pbar,
+            temp_dir=temp_dir,
+            compress=compress
+        )
 
+        # 2) Map those yielded chunks to your worker function in parallel
+        #    Using imap_unordered to keep concurrency and not block.
+        for _ in pool.imap_unordered(process_chunk_temp_wrapper, gen):
+            # We don't need the return value, so we just discard with `_`.
+            # This loop consumes the generator, ensuring lines get read
+            # and tasks get dispatched to workers.
+            pass
+
+        # 3) Once the generator is exhausted and workers finish, clean up
         pool.close()
         pool.join()
 
+    # -- Now merge the temp chunk files by year --
     merge_temp_files(temp_dir, yearly_dir, compress, overwrite)
-
-    # Optionally, remove the temp_dir
-    # shutil.rmtree(temp_dir, ignore_errors=True)
+    # Optionally remove the temp_dir
+    shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 def make_yearly_files(
