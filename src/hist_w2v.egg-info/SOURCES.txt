@@ -16,8 +16,9 @@ src/ngram_tools/lemmatize_ngrams.py
 src/ngram_tools/lowercase_ngrams.py
 src/ngram_tools/make_yearly_files.py
 src/ngram_tools/sort_ngrams.py
-src/ngram_tools/train_models.py
 src/ngram_tools/helpers/__init__.py
 src/ngram_tools/helpers/file_handler.py
 src/ngram_tools/helpers/print_jsonl_lines.py
 src/ngram_tools/helpers/verify_sort.py
+src/training_tools/evaluate_models.py
+src/training_tools/train_models.py

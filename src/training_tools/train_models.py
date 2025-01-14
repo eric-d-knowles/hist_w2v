@@ -1,11 +1,12 @@
 import argparse
-import os
 import logging
-from math import log
+import os
+from concurrent.futures import ProcessPoolExecutor
 from itertools import repeat
+from math import log
+
 from gensim.models import Word2Vec
 from tqdm.notebook import tqdm
-from concurrent.futures import ProcessPoolExecutor
 
 from ngram_tools.helpers.file_handler import FileHandler
 
@@ -24,7 +25,8 @@ class SentencesIterable:
 
     def __iter__(self):
         file_handler = FileHandler(self.file_path)
-        desc = f"Processing Year {self.year}" if self.year else f"Processing {self.file_path}"
+        desc = (f"Processing Year {self.year}" if self.year
+                else f"Processing {self.file_path}")
         with file_handler.open() as file:
             for line in tqdm(file, desc=desc, leave=True):
                 try:
@@ -93,27 +95,52 @@ def train_model_for_year(
         logging.warning(f"File for year {year} not found. Skipping...")
         return
 
+    # Ensure log directory exists within data_dir
+    log_dir = os.path.join(data_dir, "logs")
+    os.makedirs(log_dir, exist_ok=True)
+
+    # Set up logging for the year
     year_logger = logging.getLogger(f"Year_{year}")
     year_logger.setLevel(logging.INFO)
-    handler = logging.FileHandler(f"{data_dir}/year_{year}_process.log")
-    handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+    log_file_path = f"{log_dir}/year_{year}_process.log"
+    handler = logging.FileHandler(log_file_path)
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    )
     year_logger.addHandler(handler)
 
-    year_logger.info(f"Processing year {year}...")
+    # Direct Gensim logging to the same file
+    gensim_logger = logging.getLogger("gensim")
+    gensim_logger.setLevel(logging.INFO)
+    gensim_logger.addHandler(handler)
 
-    # Train model
-    model = train_word2vec(
-        file_path=file_path,
-        weight_by=weight_by,
-        log_base=log_base,
-        vector_size=vector_size,
-        window=window,
-        min_count=min_count,
-        workers=workers
-    )
-    model_save_path = f"{data_dir}/word2vec_{year}.model"
-    model.save(model_save_path)
-    year_logger.info(f"Model for year {year} saved to {model_save_path}.")
+    try:
+        year_logger.info(f"Processing year {year}...")
+
+        # Train model
+        model = train_word2vec(
+            file_path=file_path,
+            weight_by=weight_by,
+            log_base=log_base,
+            vector_size=vector_size,
+            window=window,
+            min_count=min_count,
+            workers=workers
+        )
+
+        # Construct model filename with parameters
+        model_filename = (
+            f"w2v_{year}_{weight_by}_{vector_size}_{window}_{min_count}.model")
+        model_save_path = os.path.join(data_dir, model_filename)
+        model.save(model_save_path)
+        year_logger.info(f"Model for year {year} saved to {model_save_path}.")
+    except Exception as e:
+        year_logger.error(f"Error training model for year {year}: {e}")
+    finally:
+        # Remove handlers to prevent duplicate logging
+        year_logger.removeHandler(handler)
+        gensim_logger.removeHandler(handler)
+        handler.close()
 
 
 def train_models_by_years(
@@ -127,7 +154,7 @@ def train_models_by_years(
     workers=4
 ):
     """
-    Train Word2Vec models for a range of years using multiprocessing with a single overall progress bar.
+    Train Word2Vec models for a range of years using multiprocessing.
 
     Args:
         data_dir (str): Directory containing JSONL files.
@@ -234,7 +261,10 @@ def parse_args():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s"
+    )
     args = parse_args()
     train_models_by_years(
         data_dir=args.data_dir,
