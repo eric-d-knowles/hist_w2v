@@ -9,7 +9,7 @@ description = "Tools for downloading, processing, and training word2vec models o
 authors = [
   { name = "Eric D. Knowles", email = "edk202@nyu.edu" }
 ]
-license = "MIT"
+license = { text = "MIT" }
 readme = "README.md" 
 requires-python = ">=3.7"
 keywords = ["nlp", "word2vec", "ngrams", "history"]  # or whatever fits
@@ -24,6 +24,7 @@ dependencies = [
   "tqdm>=4.64",
   "orjson>=3.6",
   "nltk>=3.7",
+  "gensim>=4.3.0",
 ]
 
 [tool.setuptools]
