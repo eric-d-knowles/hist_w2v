@@ -97,7 +97,7 @@ def set_info(proj_dir, ngram_size, compress):
     )
 
     match_path = os.path.join(
-        corpus_dir, f"{ngram_size}1ram-corpus-vocab_list_match.txt"
+        corpus_dir, f"{ngram_size}gram-corpus-vocab_list_match.txt"
     )
 
     lookup_path = os.path.join(
@@ -118,11 +118,12 @@ def print_info(start_time, corpus_path, indexed_path, ngram_size,
     print(f'Ngram size:                {ngram_size}')
     print(f'Number of workers:         {workers}')
     print(f'Compress output files:     {compress}')
-    print(f'Overwrite existing files:  {overwrite}')
+    print(f'Overwrite existing files:  {overwrite}\n')
     if vocab_n is not None and vocab_n > 0:
+        print('\033[4mVocabulary Info\033[0m')
         print(f'Vocab size (top N):        {vocab_n}')
         print(f'Match File:                {match_path}')
-        print(f'Lookup File:               {lookup_path}')
+        print(f'Lookup File:               {lookup_path}\n')
 
 
 def create_progress_bar(total, description, unit=''):
@@ -365,7 +366,9 @@ def index_and_create_vocab_files(
         workers,
         compress,
         overwrite,
-        vocab_n
+        vocab_n,
+        match_path,
+        lookup_path
     )
 
     # 1) Sort descending by freq_tot

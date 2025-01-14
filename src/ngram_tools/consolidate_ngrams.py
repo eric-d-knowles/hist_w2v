@@ -93,15 +93,16 @@ def print_info(
     temp_dir_path,
     ngram_size,
     compress,
-    overwrite
+    overwrite,
+    workers
 ):
     print(f'\033[31mStart Time:                {start_time}\n\033[0m')
     print('\033[4mConsolidation Info\033[0m')
     print(f'Merged file:               {merged_path}')
     print(f'Corpus file:               {consolidated_path}')
-    print(f'Temporary file:            {temp_dir_path}')
     print(f'Temporary directory:       {temp_dir_path}')
     print(f'Ngram size:                {ngram_size}')
+    print(f'Number of workers:         {workers}')
     print(f'Compress output files:     {compress}')
     print(f'Overwrite existing files:  {overwrite}\n')
 
@@ -262,7 +263,8 @@ def consolidate_duplicate_ngrams(
         temp_dir_path,
         ngram_size,
         compress,
-        overwrite
+        overwrite,
+        workers
     )
 
     if not os.path.exists(merged_path):

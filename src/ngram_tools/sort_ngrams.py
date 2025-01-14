@@ -1,7 +1,6 @@
 import argparse
 import heapq
 import os
-import random
 import re
 import shutil
 import sys
@@ -219,26 +218,6 @@ def print_info(
 ):
     """
     Print a configuration summary of the sorting/merging process.
-
-    Args:
-        start_time (datetime): Time when the process began.
-        input_dir (str): Path to the input directory.
-        sorted_dir (str): Path to the temporary sorted directory.
-        tmp_dir (str): Path to the temporary merging directory.
-        merged_path (str): Path where the final merged file will be saved.
-        num_files_available (int): Number of files originally available.
-        first_file (str): Path to the first file in the range.
-        last_file (str): Path to the last file in the range.
-        num_files_to_use (int): Number of files to actually process.
-        ngram_size (int): Size of the ngrams (1-5).
-        workers (int): Number of worker processes.
-        compress (bool): Whether output files are compressed.
-        overwrite (bool): Whether to overwrite existing files.
-        sort_key (str): The key to sort on (freq_tot or ngram).
-        sort_order (str): Ascending or descending.
-        start_iteration (int): Iteration to begin merging from.
-        end_iteration (int or None): Iteration at which to stop merging.
-        delete_input (bool): Whether to delete sorted files after merging.
     """
     print(f'\033[31mStart Time:                {start_time}\n\033[0m')
     print('\033[4mSort Info\033[0m')
@@ -264,14 +243,6 @@ def print_info(
 def create_progress_bar(total, description, unit=''):
     """
     Create and return a tqdm progress bar with the specified parameters.
-
-    Args:
-        total (int): The total number of items for the bar.
-        description (str): A short label for the bar.
-        unit (str, optional): Unit of measurement (e.g., 'files').
-
-    Returns:
-        tqdm.std.tqdm: A configured tqdm progress bar.
     """
     padded_desc = description.ljust(FIXED_DESC_LENGTH)
     return tqdm(
@@ -291,20 +262,15 @@ def process_a_file(args):
     """
     Sort a single input file by the specified sort key, then write the sorted
     lines to the output file.
-
-    Args:
-        args (tuple):
-            input_handler (FileHandler): Handler to read from input file.
-            output_handler (FileHandler): Handler to write to output file.
-            overwrite (bool): Whether to overwrite existing output file.
-            compress (bool): Whether the output is compressed.
-            sort_key (str): Sorting key ('freq_tot' or 'ngram').
-            sort_order (str): 'ascending' or 'descending'.
-
-    Returns:
-        int: The number of lines processed in this file.
     """
-    input_handler, output_handler, overwrite, compress, sort_key, sort_order = args
+    (
+        input_handler,
+        output_handler,
+        overwrite,
+        compress,
+        sort_key,
+        sort_order
+    ) = args
 
     if not overwrite and os.path.exists(output_handler.path):
         # If not overwriting, just count lines in the existing input file.
@@ -349,20 +315,6 @@ def process_a_directory(
     """
     Sort multiple input files in parallel, writing results to a specified
     directory.
-
-    Args:
-        input_paths (list[str]): List of input file paths.
-        output_dir (str): Directory for sorted output files.
-        output_paths (list[str]): Corresponding output file paths.
-        overwrite (bool): Whether to overwrite existing files.
-        compress (bool): Whether the output files should be compressed (lz4).
-        workers (int): Number of parallel processes.
-        sort_key (str): The key to sort on (freq_tot or ngram).
-        sort_order (str): 'ascending' or 'descending'.
-
-    Returns:
-        int: The total number of lines processed across all files in the
-        directory.
     """
     os.makedirs(output_dir, exist_ok=True)
 
@@ -413,18 +365,6 @@ def iterative_merge(
     Iteratively merge sorted files in parallel chunks using heapq.merge. Each
     iteration merges chunks of files until a single final file remains or until
     end_iteration is reached.
-
-    Args:
-        sorted_dir (str): Directory where initial sorted files are stored.
-        tmp_dir (str): Temporary directory used to store intermediate merges.
-        workers (int): Number of parallel processes for merging.
-        sort_key (str): 'freq_tot' or 'ngram' (heapq merge key).
-        sort_order (str): 'ascending' or 'descending'.
-        compress (bool): Whether final output is compressed (lz4).
-        merged_path (str): Path to the final merged output file.
-        total_lines_dir (int): Total number of lines for progress tracking.
-        start_iteration (int, optional): Iteration to start merging at (default=1).
-        end_iteration (int or None, optional): Iteration at which to stop merging.
     """
     complete = False
 
@@ -433,39 +373,26 @@ def iterative_merge(
     os.makedirs(tmp_dir, exist_ok=True)  # Make temp dir for initial sort
     os.makedirs(os.path.dirname(merged_path), exist_ok=True)  # Make corpus dir
 
-    # Iteration 0: the individually sorted files
-    iteration_0_files = [
-        os.path.join(sorted_dir, f)
-        for f in os.listdir(sorted_dir)
-        if os.path.isfile(os.path.join(sorted_dir, f))
-    ]
-    random.shuffle(iteration_0_files)
+    iteration_0_files = get_presorted_file_list(sorted_dir)
 
-    # Decide which iteration's files to start with
-    if start_iteration == 1:
-        current_iter_files = iteration_0_files
-    else:
-        current_iter_files = find_iteration_files(tmp_dir, start_iteration - 1)
-        if not current_iter_files:
-            raise FileNotFoundError(
-                f"No files found for iteration {start_iteration - 1}. "
-                "Cannot resume from iteration {start_iteration}."
-            )
+    current_iter_files = get_current_iter_files(
+        start_iteration, iteration_0_files, tmp_dir
+    )
 
     iteration = start_iteration
-
     while True:
-        num_files = len(current_iter_files)
+        num_files = len(current_iter_files)  # How many files in the iteration?
 
-        # If there's 0 or 1 file, we've reached the final condition
-        if num_files <= 1:
-            if num_files == 1 and current_iter_files[0] != merged_path:
-                shutil.move(current_iter_files[0], merged_path)
+        # If there's 1 file in the iteration, we're done; move to merged_dir
+        if num_files == 1:
+            shutil.move(current_iter_files[0], merged_path)
             print(f"Merging complete. Final file: {merged_path}")
+            complete = True
             break
 
-        # If 2 files remain, do a final merge
+        # If 2 files in the iteration, do a final merge
         if num_files == 2:
+            # Break if we've exceeded end_iteration
             if end_iteration is not None and iteration > end_iteration:
                 break
             print(f"\nIteration {iteration}: final merge of 2 files.")
@@ -489,22 +416,14 @@ def iterative_merge(
         if end_iteration is not None and iteration > end_iteration:
             break
 
-        # Split current files into chunks for parallel merging
-        base_chunk_size = num_files // workers
-        remainder = num_files % workers
+        # Adjust number of workers to ensure each worker gets at least 2 files
+        max_workers = max(1, num_files // 2)
+        active_workers = min(workers, max_workers)
 
-        while base_chunk_size <= 1 and workers > 2:
-            workers = max(2, workers // 2)
-            base_chunk_size = num_files // workers
-            remainder = num_files % workers
-
-        file_chunks = []
-        start_idx = 0
-        for i in range(workers):
-            end_idx = start_idx + base_chunk_size + (1 if i < remainder else 0)
-            if start_idx < num_files:
-                file_chunks.append(current_iter_files[start_idx:end_idx])
-            start_idx = end_idx
+        # Partition files among workers
+        file_chunks = partition_files_among_workers(
+            current_iter_files, active_workers
+        )
 
         # Create file paths for iteration's chunk merges
         chunk_output_paths = []
@@ -515,13 +434,13 @@ def iterative_merge(
             chunk_output_paths.append(out_path)
 
         print(f"\nIteration {iteration}: merging {num_files} files into "
-              f"{len(file_chunks)} chunks using {workers} workers.")
+              f"{len(file_chunks)} chunks using {active_workers} workers.")
         c_sizes = [len(ch) for ch in file_chunks]
         for size, count in sorted(Counter(c_sizes).items()):
             print(f"  {count} chunk(s) with {size} file(s)")
 
         # Perform parallel merges on each chunk
-        with Pool(processes=workers) as pool:
+        with Pool(processes=active_workers) as pool:
             pool.starmap(
                 heap_merge_chunk,
                 [
@@ -549,13 +468,72 @@ def iterative_merge(
     return complete
 
 
+def partition_files_among_workers(current_iter_files, workers):
+    """
+    Partition files into worker groups to balance total size across workers.
+    """
+    # Get file sizes
+    file_sizes = [(os.path.getsize(file), file) for file in current_iter_files]
+
+    # Sort files by size in descending order
+    file_sizes.sort(reverse=True, key=lambda x: x[0])
+
+    # Create a min-heap to track worker loads
+    # Make tuples: (total_size, worker_id, files)
+    worker_loads = [(0, i, []) for i in range(workers)]
+
+    # Assign files to workers
+    for size, file in file_sizes:
+        # Pop the worker with the smallest current workload
+        total_size, worker_id, worker_files = heapq.heappop(worker_loads)
+
+        # Assign the file to this worker
+        worker_files.append(file)
+        total_size += size
+
+        # Push the updated worker back into the heap
+        heapq.heappush(worker_loads, (total_size, worker_id, worker_files))
+
+    # Extract the file assignments from the heap
+    worker_assignments = [
+        worker_files for _, _, worker_files in sorted(
+            worker_loads, key=lambda x: x[1]
+        )
+    ]
+
+    return worker_assignments
+
+
+def get_presorted_file_list(sorted_dir):
+    iteration_0_files = [
+        os.path.join(sorted_dir, f)
+        for f in os.listdir(sorted_dir)
+        if os.path.isfile(os.path.join(sorted_dir, f))
+    ]
+
+    return iteration_0_files
+
+
+def get_current_iter_files(start_iteration, iteration_0_files, tmp_dir):
+    """
+    Get list of files for the current heapsort iteration.
+    """
+    if start_iteration == 1:
+        current_iter_files = iteration_0_files
+    else:
+        current_iter_files = find_iteration_files(tmp_dir, start_iteration - 1)
+        if not current_iter_files:
+            raise FileNotFoundError(
+                f"No files found for iteration {start_iteration - 1}. "
+                "Cannot resume from iteration {start_iteration}."
+            )
+
+    return current_iter_files
+
+
 def remove_iteration_files(tmp_dir, iteration):
     """
     Remove files for the specified iteration from the tmp_dir.
-
-    Args:
-        tmp_dir (str): Path to the directory containing iteration files.
-        iteration (int): The iteration to remove (merged_iter_{iteration}).
     """
     if iteration < 1:
         return
@@ -568,13 +546,6 @@ def remove_iteration_files(tmp_dir, iteration):
 def find_iteration_files(tmp_dir, iteration):
     """
     Find all chunk files from a specified iteration in tmp_dir.
-
-    Args:
-        tmp_dir (str): Directory to search for iteration files.
-        iteration (int): The iteration to look for.
-
-    Returns:
-        list[str]: A list of file paths matching the iteration pattern.
     """
     pattern = re.compile(rf"^merged_iter_{iteration}_chunk_\d+(\.jsonl(\.lz4)?)?$")
     results = []

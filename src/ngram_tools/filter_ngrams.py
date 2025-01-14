@@ -609,7 +609,7 @@ def filter_ngrams(
     # Build a vocabulary set if the user provides a vocab_file
     vocab_set = frozenset()
     if vocab_file:
-        vocab_path = os.path.join(proj_dir, vocab_file)
+        vocab_path = os.path.join(proj_dir, '1gram_files/6corpus/', vocab_file)
         if not os.path.isfile(vocab_path):
             raise FileNotFoundError(f"Vocab file not found at {vocab_path}")
 
