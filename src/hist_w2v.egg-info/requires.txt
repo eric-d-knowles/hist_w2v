@@ -3,3 +3,4 @@ tqdm>=4.64
 orjson>=3.6
 nltk>=3.7
 gensim>=4.3.0
+pandas>=1.3.0
