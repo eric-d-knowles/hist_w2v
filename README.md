@@ -1,6 +1,9 @@
-# hist_w2v: Tools for Training Word2Vec Models on Google Ngrams
+# **hist_w2v**: Tools for Training Word2Vec Models on Google Ngrams
 
-I began this project because I wanted to study the evolution of group stereotypes over decades and centuries using the Google Ngrams corpora. I'm nowhere near the first to think of this—yet I wasn't satisfied with the ready-made tools I found online. So, I created a library of Python scripts to perform the following steps:
+I started this project because I wanted to study the evolution of group stereotypes over time using Google Ngrams corpora. I'm not the first to think of this—however, I wasn't satisfied with the existing tools I found online. So, I created a Python package to streamline the process of (1) downloading and pre-processing raw ngrams and (2) training and evluating `word2vec` models on the ngrams. These are the specific scripts in the library:
 
-The raw ngram files, even after prefiltering, are large and numerous. Given the demands on storage space, RAM, and processors, **the code is intended for use on an HPC cluster**. I've incorporated parallel processing where possible and attempted to make the code relatively memory-efficient—although some scripts still use a great deal of RAM. In future updates, I'll try to optimize the code for smaller systems.
-
+`downoad_ngrams.py`: downloads the desired ngram types (e.g., 3-grams with part-of-speech [POS] tags, 5-grams with POS tags).
+`lowercase_ngrams.py': make the ngrams all lowercase.
+`lemmatize_ngrams.py': lemmatize the ngrams (i.e., reduce them to their base grammatical forms).
+`filter_ngrams.py': screen out undesired tokens (e.g., stop words, numbers, words not in a vocabulary file) from the ngrams.
+`index_and_create_vocabulary.py`: 
