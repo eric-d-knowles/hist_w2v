@@ -30,7 +30,7 @@ The library consists of the following modules and notebooks:
 2. `workflow_multigrams.ipynb`: Jupyter Notebook showing how to download and preprocess multigrams.
 3. `workflow_training.ipynb`: Jupyter Notebook showing how to train, evaluate, and plots results from `word2vec` models.
 
-Finally, the `training_results` folder is where a file containing evaluation metrics for a set of models is stored (i.e., `evaluation_results.csv`). 
+Finally, the `training_results` folder is where a file containing evaluation metrics for a set of models is stored. 
 
 ## System Requirements
 Unless you have an extremely powerful personal computer, the code is probably only suitable to run on a high-performance computing (HPC) cluster; efficiently downloading, processing, and training models on ngrams in parallel takes lots of processors and memory. On my university's HPC, I typically request 14 cores and 128G of RAM. A priority for future development is to streamline the code for individual systems.
