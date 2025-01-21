@@ -25,3 +25,5 @@ I wanted to study the evolution of group stereotypes over time using Google Ngra
 1. `workflow_unigrams.ipynb`: Jupyter Notebook showing how to download and preprocess unigrams.
 2. `workflow_multigrams.ipynb`: Jupyter Notebook showing how to download and preprocess multigrams.
 3. `workflow_training.ipynb`: Jupyter Notebook showing how to train, evaluate, and plots results from `word2vec` models.
+
+Finally, the `training_results` is where a file containing evaluation metrics for a set of models is stored (i.e., `evaluation_results.csv`). 
