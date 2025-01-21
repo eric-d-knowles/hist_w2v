@@ -1,3 +1,4 @@
+LICENSE
 README.md
 pyproject.toml
 src/hist_w2v.egg-info/PKG-INFO
@@ -21,4 +22,5 @@ src/ngram_tools/helpers/file_handler.py
 src/ngram_tools/helpers/print_jsonl_lines.py
 src/ngram_tools/helpers/verify_sort.py
 src/training_tools/evaluate_models.py
+src/training_tools/plotting.py
 src/training_tools/train_models.py
