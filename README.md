@@ -7,5 +7,6 @@ I wanted to study the evolution of group stereotypes over time using Google Ngra
 2. `lowercase_ngrams.py`: make the ngrams all lowercase.
 3. `lemmatize_ngrams.py`: lemmatize the ngrams (i.e., reduce them to their base grammatical forms).
 4. `filter_ngrams.py`: screen out undesired tokens (e.g., stop words, numbers, words not in a vocabulary file) from the ngrams.
-5. `sort_ngrams.py`: combine multiple ngrams files into a single sorted file. 
-6. `index_and_create_vocabulary.py`: numerically index a list of unigrams and create a "vocabulary file" to screen multigrams.
+5. `sort_ngrams.py`: combine multiple ngrams files into a single sorted file.
+6. `consolidate_ngrams.py`: consolidate duplicate ngrams resulting from the previous steps.
+7. `index_and_create_vocabulary.py`: numerically index a list of unigrams and create a "vocabulary file" to screen multigrams.
