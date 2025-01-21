@@ -1,6 +1,8 @@
 # **hist_w2v**: Tools for Training Word2Vec Models on Google Ngrams
 
-I wanted to study the evolution of group stereotypes over time using Google Ngrams corpora, but wasn't satisfied with the existing tools I found online. So, I created a Python package to streamline the process of (1) downloading and pre-processing raw ngrams and (2) training and evluating `word2vec` models on the ngrams. The library consists of the following modules and notebooks:
+I wanted to study the evolution of group stereotypes over time using Google Ngrams corpora, but wasn't satisfied with the existing tools I found online. So, I created a Python package to streamline the process of (1) downloading and pre-processing raw ngrams and (2) training and evaluating `word2vec` models on the ngrams. After installing, the best way to learn how to use these tools is to work through the provided Jupyter Notebook workflows.
+
+The library consists of the following modules and notebooks:
 
 `src/ngram_tools`
 1. `downoad_ngrams.py`: downloads the desired ngram types (e.g., 3-grams with part-of-speech [POS] tags, 5-grams without POS tags).
@@ -28,4 +30,4 @@ I wanted to study the evolution of group stereotypes over time using Google Ngra
 
 Finally, the `training_results` folder is where a file containing evaluation metrics for a set of models is stored (i.e., `evaluation_results.csv`). 
 
-Unless you have an extremely powerful personal computer, the code is probably only suitable to run on a high-performance computing (HPC) cluster; efficiently downloading, processing, and training models on ngrams in parallel takes lots of processors and memory. A priority for future development is to streamline the code for individual systems.
+Unless you have an extremely powerful personal computer, the code is probably only suitable to run on a high-performance computing (HPC) cluster; efficiently downloading, processing, and training models on ngrams in parallel takes lots of processors and memory. On my university's HPC, I typically request 14 cores and 128G of RAM. A priority for future development is to streamline the code for individual systems.
