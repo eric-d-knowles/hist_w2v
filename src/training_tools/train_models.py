@@ -38,12 +38,20 @@ def set_info(ngram_size, proj_dir):
         proj_dir, f"{ngram_size}gram_files/6corpus/yearly_files/models"
     )
     log_dir = os.path.join(
-        proj_dir, f"{ngram_size}gram_files/6corpus/yearly_files/logs"
+        proj_dir, f"{ngram_size}gram_files/6corpus/yearly_files/logs/training"
     )
     return start_time, data_dir, model_dir, log_dir
 
 
-def print_info(start_time, data_dir, model_dir, log_dir, ngram_size, workers):
+def print_info(
+    start_time,
+    data_dir,
+    model_dir,
+    log_dir,
+    ngram_size,
+    workers,
+    grid_params
+):
     """
     Print project setup information.
 
@@ -55,13 +63,15 @@ def print_info(start_time, data_dir, model_dir, log_dir, ngram_size, workers):
         ngram_size (int): The size of ngrams.
         workers (int): Number of workers for multiprocessing.
     """
-    print(f"\033[31mStart Time:                {start_time}\n\033[0m")
+    print(f"\033[31mStart Time:         {start_time}\n\033[0m")
     print("\033[4mTraining Info\033[0m")
-    print(f"Data directory:            {data_dir}")
-    print(f"Model directory:           {model_dir}")
-    print(f"Log directory:             {log_dir}")
-    print(f"Ngram size:                {ngram_size}")
-    print(f"Number of workers:         {workers}\n")
+    print(f"Data directory:     {data_dir}")
+    print(f"Model directory:    {model_dir}")
+    print(f"Log directory:      {log_dir}")
+    print(f"Ngram size:         {ngram_size}")
+    print(f"Number of workers:  {workers}\n"),
+    print("Grid paramters:"),
+    print(f"{grid_params}\n")
 
 
 def calculate_weight(freq, base=10):
@@ -166,6 +176,7 @@ def train_word2vec(
     vector_size,
     window,
     min_count,
+    sg,
     workers,
     **kwargs
 ):
@@ -187,30 +198,22 @@ def train_word2vec(
         file_path, weight_by=weight_by, log_base=10
     )
     return Word2Vec(sentences, vector_size=vector_size, window=window,
-                    min_count=min_count, workers=workers, **kwargs)
+                    min_count=min_count, sg=sg, workers=workers, **kwargs)
 
 
-def train_model(year, data_dir, model_dir, log_dir, weight_by,
-                vector_size, window, min_count, workers):
+def train_model(year, data_dir, model_dir, log_dir, weight_by, vector_size,
+                window, min_count, sg, epochs, workers):
     """
     Train a Word2Vec model for a specific year.
-
-    Args:
-        year (int): Year to process.
-        data_dir (str): Directory containing JSONL files.
-        model_dir (str): Directory to save trained models.
-        log_dir (str): Directory to save logs.
-        weight_by (str): Weighting strategy.
-        vector_size (int): Size of word vectors.
-        window (int): Context window size.
-        min_count (int): Minimum frequency of words.
-        workers (int): Number of worker threads.
     """
+    name_string = (
+        f"y{year}_wb{weight_by}_vs{vector_size}_w{window}_"
+        f"mc{min_count}_sg{sg}_e{epochs}"
+    )
+
     logger = configure_logging(
         log_dir,
-        filename=(
-            f"w2v_{year}_{weight_by}_{vector_size}_{window}_{min_count}.log"
-        )
+        filename=f"w2v_{name_string}.log"
     )
 
     file_path = os.path.join(data_dir, f"{year}.jsonl.lz4")
@@ -225,7 +228,7 @@ def train_model(year, data_dir, model_dir, log_dir, weight_by,
         logger.info(
             f"Processing year {year} with parameters: "
             f"vector_size={vector_size}, window={window}, "
-            f"min_count={min_count}..."
+            f"min_count={min_count}, sg={sg}, epochs={epochs}..."
         )
 
         model = train_word2vec(
@@ -234,12 +237,12 @@ def train_model(year, data_dir, model_dir, log_dir, weight_by,
             vector_size=vector_size,
             window=window,
             min_count=min_count,
+            sg=sg,
+            epochs=epochs,
             workers=workers
         )
 
-        model_filename = (
-            f"w2v_{year}_{weight_by}_{vector_size}_{window}_{min_count}.kv"
-        )
+        model_filename = f"w2v_{name_string}.kv"
         model_save_path = os.path.join(model_dir, model_filename)
         model.wv.save(model_save_path)
 
@@ -252,42 +255,64 @@ def train_models(
     ngram_size,
     proj_dir,
     years,
-    weight_by=("freq",),
+    weight_by=('freq',),
     vector_size=(100,),
     window=(5,),
     min_count=(1,),
+    approach=('CBOW',),
+    epochs=(5,),
     workers=os.cpu_count()
 ):
     """
     Train Word2Vec models for multiple years.
-
-    Args:
-        ngram_size (int): Size of ngrams.
-        proj_dir (str): Base project directory.
-        years (tuple): Range of years to process.
-        weight_by (tuple): Weighting strategies.
-        vector_size (tuple): Sizes of word vectors.
-        window (tuple): Context window sizes.
-        min_count (tuple): Minimum frequencies of words.
-        workers (int): Number of worker threads.
     """
-    start_time, data_dir, model_dir, log_dir = set_info(ngram_size, proj_dir)
+    mapping = {'skip-gram': 1, 'CBOW': 0}
+    sg = mapping.get(approach)
 
-    print_info(start_time, data_dir, model_dir, log_dir, ngram_size, workers)
+    if sg is None:
+        logging.info(
+            "Invalid approach: Must be 'CBOW' or 'skip-gram'. "
+            "Defaulting to CBOW."
+        )
+        sg = 0
 
     weight_by = ensure_iterable(weight_by)
     vector_size = ensure_iterable(vector_size)
     window = ensure_iterable(window)
     min_count = ensure_iterable(min_count)
+    approach = ensure_iterable(approach)
+    sg = ensure_iterable(sg)
+    epochs = ensure_iterable(epochs)
+
+    start_time, data_dir, model_dir, log_dir = set_info(ngram_size, proj_dir)
+
+    grid_params = (
+        f'  Weighting:           {weight_by}\n'
+        f'  Vector size:         {vector_size}\n'
+        f'  Context window:      {window}\n'
+        f'  Minimum word count:  {min_count}\n'
+        f'  Approach:            {approach}\n'
+        f'  Training epochs:     {epochs}'
+    )
+
+    print_info(
+        start_time,
+        data_dir,
+        model_dir,
+        log_dir,
+        ngram_size,
+        workers,
+        grid_params
+    )
 
     param_combinations = list(
-        product(weight_by, vector_size, window, min_count)
+        product(weight_by, vector_size, window, min_count, sg, epochs)
     )
     years = range(years[0], years[1] + 1)
 
     tasks = [
         (year, data_dir, model_dir, log_dir, params[0], params[1],
-         params[2], params[3], workers)
+         params[2], params[3], params[4], params[5], workers)
         for year in years for params in param_combinations
     ]
 
@@ -354,7 +379,20 @@ def parse_args():
         type=int,
         default=1,
         help="Minimum ngram frequency."
-    )
+    ),
+    parser.add_argument(
+        "--approach",
+        type=str,
+        choices=['CBOW', 'skip-gram'],
+        default='CBOW',
+        help="CBOW = 0, skip-gram = 1."
+    ),
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=5,
+        help="Number of training epochs."
+    ),
     parser.add_argument(
         "--workers",
         type=int,
@@ -374,5 +412,7 @@ if __name__ == "__main__":
         vector_size=args.vector_size,
         window=args.window,
         min_count=args.min_count,
+        approach=args.approach,
+        epochs=args.epochs,
         workers=args.workers
     )

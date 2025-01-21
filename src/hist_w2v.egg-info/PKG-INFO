@@ -17,6 +17,8 @@ Requires-Dist: orjson>=3.6
 Requires-Dist: nltk>=3.7
 Requires-Dist: gensim>=4.3.0
 Requires-Dist: pandas>=1.3.0
+Requires-Dist: matplotlib<4.0,>=3.4
+Requires-Dist: seaborn<1.0,>=0.11
 
 # hist_w2v: Tools for Training Word2Vec Models on Google Ngrams
 
