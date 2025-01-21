@@ -40,4 +40,4 @@ If you use `hist_w2v` in your research or other publications, I kindly ask you t
 
 ## License
 
-This project is released under the [MIT License](https://github.com/eric-d-knowles/hist_w2v/tree/main?tab=MIT-1-ov-file#)
+This project is released under the [MIT License](https://github.com/eric-d-knowles/hist_w2v/blob/main/LICENSE).
