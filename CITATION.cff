@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Knowles"
+  given-names: "Eric D."
+  orcid: "https://orcid.org/0000-0000-0000-0000"
+title: "hist_w2v: Tools for training word2vec models on Google Ngrams"
+version: 0.1.0
+doi:
+date-released: 2025-1-21
+url: "https://github.com/eric-d-knowles/hist_w2v"
