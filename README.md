@@ -34,3 +34,14 @@ Finally, the `training_results` folder is where a file containing evaluation met
 
 ## System Requirements
 Unless you have an extremely powerful personal computer, the code is probably only suitable to run on a high-performance computing (HPC) cluster; efficiently downloading, processing, and training models on ngrams in parallel takes lots of processors and memory. On my university's HPC, I typically request 14 cores and 128G of RAM. A priority for future development is to streamline the code for individual systems.
+
+## Citing hist_w2v
+If you use `hist_w2v` in your research or other publications, we kindly ask you to cite it. Below is an example BibTeX entry you can use:
+
+@misc{hist_w2v,
+  title        = {hist\_w2v: Tools for Training Word2Vec Models on Google Ngrams},
+  author       = {Eric D. Knowles},
+  year         = 2025,
+  howpublished = {\url{https://github.com/eric-d-knowles/hist_w2v}},
+  note         = {Version 0.1.0},
+}
