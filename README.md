@@ -36,4 +36,8 @@ Finally, the `training_results` folder is where a file containing evaluation met
 Unless you have an extremely powerful personal computer, the code is probably only suitable to run on a high-performance computing (HPC) cluster; efficiently downloading, processing, and training models on ngrams in parallel takes lots of processors and memory. On my university's HPC, I typically request 14 cores and 128G of RAM. A priority for future development is to streamline the code for individual systems.
 
 ## Citing hist_w2v
-If you use `hist_w2v` in your research or other publications, I kindly ask you to cite it. Used the GitHub citation to create citation text. 
+If you use `hist_w2v` in your research or other publications, I kindly ask you to cite it. Used the GitHub citation to create citation text.
+
+## License
+
+This project is released under the [MIT License](https://github.com/eric-d-knowles/hist_w2v/tree/main?tab=MIT-1-ov-file#)
