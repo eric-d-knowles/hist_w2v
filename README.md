@@ -3,7 +3,7 @@
 I wanted to study the evolution of group stereotypes over time using Google Ngrams corpora, but wasn't satisfied with the existing tools I found online. So, I created a Python package to streamline the process of (1) downloading and pre-processing raw ngrams and (2) training and evluating `word2vec` models on the ngrams. The library consists of the following modules and notebooks:
 
 `src/ngram_tools`
-1. `downoad_ngrams.py`: downloads the desired ngram types (e.g., 3-grams with part-of-speech [POS] tags, 5-grams with POS tags).
+1. `downoad_ngrams.py`: downloads the desired ngram types (e.g., 3-grams with part-of-speech [POS] tags, 5-grams without POS tags).
 2. `convert_to_jsonl.py`: converts the raw-text ngrams from Google into a more flexible JSONL format.
 3. `lowercase_ngrams.py`: makes the ngrams all lowercase.
 4. `lemmatize_ngrams.py`: lemmatizes the ngrams (i.e., reduce them to their base grammatical forms).
