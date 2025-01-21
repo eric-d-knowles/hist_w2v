@@ -2,4 +2,7 @@
 .ipynb_checkpoints/
 # Ignore Python bytecode and cache
 __pycache__/
-
+# Build artifacts
+build/
+dist/
+*.egg-info/
