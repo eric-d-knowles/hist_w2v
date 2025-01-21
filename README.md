@@ -1,6 +1,6 @@
 # **hist_w2v**: Tools for Training Word2Vec Models on Google Ngrams
 
-I wanted to study the evolution of group stereotypes over time using Google Ngrams corpora, but wasn't satisfied with the existing tools I found online. So, I created a Python package to streamline the process of (1) downloading and pre-processing raw ngrams and (2) training and evluating `word2vec` models on the ngrams. The library consists of the following:
+I wanted to study the evolution of group stereotypes over time using Google Ngrams corpora, but wasn't satisfied with the existing tools I found online. So, I created a Python package to streamline the process of (1) downloading and pre-processing raw ngrams and (2) training and evluating `word2vec` models on the ngrams. The library consists of the following modules and notebooks:
 
 `src/ngram_tools`
 1. `downoad_ngrams.py`: downloads the desired ngram types (e.g., 3-grams with part-of-speech [POS] tags, 5-grams with POS tags).
@@ -26,4 +26,4 @@ I wanted to study the evolution of group stereotypes over time using Google Ngra
 2. `workflow_multigrams.ipynb`: Jupyter Notebook showing how to download and preprocess multigrams.
 3. `workflow_training.ipynb`: Jupyter Notebook showing how to train, evaluate, and plots results from `word2vec` models.
 
-Finally, the `training_results` is where a file containing evaluation metrics for a set of models is stored (i.e., `evaluation_results.csv`). 
+Finally, the `training_results` folder is where a file containing evaluation metrics for a set of models is stored (i.e., `evaluation_results.csv`). 
