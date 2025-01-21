@@ -1,4 +1,4 @@
-# hist_w2v: Tools for Training Word2Vec Models on Google Ngrams
+# **hist_w2v**: Tools for Training Word2Vec Models on Google Ngrams
 
 I wanted to study the evolution of group stereotypes over time using Google Ngrams corpora, but wasn't satisfied with the existing tools I found online. So, I created a Python package to streamline the process of (1) downloading and pre-processing raw ngrams and (2) training and evluating `word2vec` models on the ngrams. The library consists of the following:
 
