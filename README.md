@@ -35,8 +35,8 @@ The library consists of the following modules and notebooks:
 4. `w2v_model.py`: a Python class (`W2VModel`) to aid in the evaluation, normalization, and alignment of yearly `word2vec` models 
 
 `notebooks`
-1. `workflow_unigrams.ipynb`: Jupyter Notebook showing how to download and preprocess unigrams.
-2. `workflow_multigrams.ipynb`: Jupyter Notebook showing how to download and preprocess multigrams.
+1. `workflow_unigrams.ipynb`: Jupyter Notebook showing how to download and preprocess _unigrams_.
+2. `workflow_multigrams.ipynb`: Jupyter Notebook showing how to download and preprocess _multigrams_.
 3. `workflow_training.ipynb`: Jupyter Notebook showing how to train, evaluate, and plots results from `word2vec` models.
 
 Finally, the `training_results` folder is where a file containing evaluation metrics for a set of models is stored. 
