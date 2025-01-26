@@ -32,7 +32,7 @@ The library consists of the following modules and notebooks:
 1. `train_ngrams.py`: train `word2vec` models on pre-processed multigram corpora.
 2. `evaluate_models.py`: evaluate training quality on intrinsic benchmarks (i.e., similarity and analogy tests).
 3. `plotting.py`: plot various types of model results.
-4. `w2v_model.py`: a Python class to aid in the evaluation, normalization, and alignment of yearly `word2vec` models 
+4. `w2v_model.py`: a Python class (`W2VModel`) to aid in the evaluation, normalization, and alignment of yearly `word2vec` models 
 
 `notebooks`
 1. `workflow_unigrams.ipynb`: Jupyter Notebook showing how to download and preprocess unigrams.
