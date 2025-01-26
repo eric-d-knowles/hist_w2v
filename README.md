@@ -1,7 +1,7 @@
 # hist_w2v
 
 ## Tools for downloading, processing, and training word2vec models on Google Ngrams
-Python package to assist researchers in using Google Ngrams to examine semantic change over years, decades, and centuries. `hist_w2v` automates _downloading and pre-processing_ raw ngrams and _training `word2vec` models on an ngram corpus.
+Python package to assist researchers in using Google Ngrams to examine semantic change over years, decades, and centuries. `hist_w2v` automates _downloading and pre-processing_ raw ngrams and _training_ `word2vec` models on a corpus.
 
 ### Installation
 There are two ways to install `hist_w2v`:
@@ -9,9 +9,9 @@ There are two ways to install `hist_w2v`:
 1. Clone the GitHub repository (https://github.com/eric-d-knowles/hist_w2v) to your Python environmen t.
 2. Install from PyPI.org by running `pip install hist_w2v` in your Python environment.
 
-After installing `hist_w2v`, he best way to learn how to use it by working through the provided Jupyter Notebook workflows. Together, these notebooks provide fully marked-up, end-to-end illustration of the package's functionality. 
+After installing `hist_w2v`, the best way to learn how to use it by working through the provided Jupyter Notebook workflows. Together, these notebooks provide a fully documented, end-to-end illustration of the package's functionality. 
 
-## Package Contents
+### Package Contents
 The library consists of the following modules and notebooks:
 
 `src/ngram_tools`
@@ -32,6 +32,7 @@ The library consists of the following modules and notebooks:
 1. `train_ngrams.py`: train `word2vec` models on pre-processed multigram corpora.
 2. `evaluate_models.py`: evaluate training quality on intrinsic benchmarks (i.e., similarity and analogy tests).
 3. `plotting.py`: plot various types of model results.
+4. `w2v_model.py`: a Python class to aid in the evaluation, normalization, and alignment of yearly `word2vec` models 
 
 `notebooks`
 1. `workflow_unigrams.ipynb`: Jupyter Notebook showing how to download and preprocess unigrams.
@@ -40,7 +41,7 @@ The library consists of the following modules and notebooks:
 
 Finally, the `training_results` folder is where a file containing evaluation metrics for a set of models is stored. 
 
-## System Requirements
+### System Requirements
 Unless you have an very powerful personal computer, the code is lilely only suitable to run on a high-performance computing (HPC) cluster; efficiently downloading, processing, and training models on ngrams in parallel takes lots of processors and memory. On my university's HPC, I typically request 14 cores and 128G of RAM. A priority for development is refactoring the code for individual systems.
 
 ## Citing hist_w2v
