@@ -1,6 +1,15 @@
 # hist_w2v
+
 ## Tools for downloading, processing, and training word2vec models on Google Ngrams
-Python package to assist researchers in using Google Ngrams to examine semantic change over years, decades, and centuries. `hist_w2v` automates _downloading and pre-processing_ raw ngrams and _training `word2vec` models_ on a specified ngram corpus. After installing, the best way to learn how to use these tools is to work through the provided Jupyter Notebook workflows.
+Python package to assist researchers in using Google Ngrams to examine semantic change over years, decades, and centuries. `hist_w2v` automates _downloading and pre-processing_ raw ngrams and _training `word2vec` models on an ngram corpus.
+
+### Installation
+There are two ways to install `hist_w2v`:
+
+1. Clone the GitHub repository (https://github.com/eric-d-knowles/hist_w2v) to your Python environmen t.
+2. Install from PyPI.org by running `pip install hist_w2v` in your Python environment.
+
+After installing `hist_w2v`, he best way to learn how to use it by working through the provided Jupyter Notebook workflows. Together, these notebooks provide fully marked-up, end-to-end illustration of the package's functionality. 
 
 ## Package Contents
 The library consists of the following modules and notebooks:
