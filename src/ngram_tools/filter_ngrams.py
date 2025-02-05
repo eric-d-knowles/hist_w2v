@@ -8,7 +8,7 @@ from pathlib import Path
 
 import nltk
 from nltk.corpus import stopwords
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 
 from ngram_tools.helpers.file_handler import FileHandler
 
@@ -23,12 +23,6 @@ global_vocab_set = frozenset()
 global_stopword_set = frozenset()
 filters_global = {}
 min_tokens_global = 2
-
-FIXED_DESC_LENGTH = 15
-BAR_FORMAT = (
-    "{desc:<15} |{bar:50}| {percentage:5.1f}% {n_fmt:<12}/{total_fmt:<12} "
-    "[{elapsed}<{remaining}, {rate_fmt}]"
-)
 
 
 def initializer(vocab_set, stopword_set, filters, min_tokens):
@@ -50,97 +44,6 @@ def initializer(vocab_set, stopword_set, filters, min_tokens):
     global_stopword_set = stopword_set
     filters_global = filters
     min_tokens_global = min_tokens
-
-
-def parse_args():
-    """
-    Parse command-line arguments for filtering ngrams.
-
-    Returns:
-        argparse.Namespace: Parsed command-line arguments.
-    """
-    parser = argparse.ArgumentParser(description="Filter ngrams.")
-
-    parser.add_argument(
-        '--ngram_size',
-        type=int,
-        choices=[1, 2, 3, 4, 5],
-        required=True,
-        help='Ngrams size to get (required).'
-    )
-    parser.add_argument(
-        "--proj_dir",
-        type=str,
-        required=True,
-        help='Path to the project base directory.'
-    )
-    parser.add_argument(
-        '--file_range',
-        type=int,
-        nargs=2,
-        help='Range of file indices to get [default=all].'
-    )
-    parser.add_argument(
-        '--overwrite',
-        action='store_true',
-        default=False,
-        help='Overwrite existing files? (default=False).'
-    )
-    parser.add_argument(
-        '--compress',
-        action='store_true',
-        default=False,
-        help='Compress saved files? (default=False).'
-    )
-    parser.add_argument(
-        '--workers',
-        type=int,
-        default=cpu_count(),
-        help='Number of processors to use (default=all).'
-    )
-    parser.add_argument(
-        '--stopwords',
-        action='store_true',
-        default=False,
-        help='Filter out stopwords.'
-    )
-    parser.add_argument(
-        '--min_token_length',
-        type=int,
-        default=0,
-        help='Minimum token length to retain (default=0).'
-    )
-    parser.add_argument(
-        '--numerals',
-        action='store_true',
-        default=False,
-        help='Filter out tokens containing numerals.'
-    )
-    parser.add_argument(
-        '--nonalpha',
-        action='store_true',
-        default=False,
-        help='Filter out tokens with non-alpha characters.'
-    )
-    parser.add_argument(
-        '--min_tokens',
-        type=int,
-        default=2,
-        help='Shortest filtered ngrams to retain (default=2).'
-    )
-    parser.add_argument(
-        '--vocab_file',
-        type=str,
-        help='Relative path to a vocabulary file.'
-    )
-    parser.add_argument(
-        '--delete_input',
-        action='store_true',
-        default=False,
-        help='Delete input files (default=False).'
-    )
-
-    return parser.parse_args()
 
 
 def construct_output_path(input_file, output_dir, compress):
@@ -288,32 +191,6 @@ def print_info(
     if vocab_file:
         print(f'Vocab file:                   {vocab_file}')
     print()
-
-
-def create_progress_bar(total, description, unit=''):
-    """
-    Create a tqdm progress bar with predefined formatting.
-
-    Args:
-        total (int): Total number of items in the progress bar.
-        description (str): Label for the progress bar.
-        unit (str, optional): Unit of measurement (e.g., 'files').
-
-    Returns:
-        tqdm.std.tqdm: Configured tqdm progress bar object.
-    """
-    padded_desc = description.ljust(FIXED_DESC_LENGTH)
-    return tqdm(
-        file=sys.stdout,
-        total=total,
-        desc=padded_desc,
-        leave=True,
-        dynamic_ncols=False,
-        ncols=100,
-        unit=unit,
-        colour='green',
-        bar_format=BAR_FORMAT
-    )
 
 
 def passes_filters(token):
@@ -508,11 +385,7 @@ def process_a_directory(
         for in_handler, out_handler in handlers
     ]
 
-    with create_progress_bar(
-        len(handlers),
-        'Filtering',
-        'files'
-    ) as pbar:
+    with tqdm(total=len(handlers), desc='Filtering', unit='files') as pbar:
         with Pool(
             processes=workers,
             initializer=initializer,
@@ -686,22 +559,3 @@ def filter_ngrams(
     print(f'\033[31m\nEnd Time:                  {end_time}\033[0m')
     total_runtime = end_time - start_time
     print(f'\033[31mTotal runtime:             {total_runtime}\n\033[0m')
-
-
-if __name__ == '__main__':
-    args = parse_args()
-    filter_ngrams(
-        ngram_size=args.ngram_size,
-        proj_dir=args.proj_dir,
-        file_range=args.file_range,
-        overwrite=args.overwrite,
-        compress=args.compress,
-        workers=args.workers,
-        numerals=args.numerals,
-        nonalpha=args.nonalpha,
-        stops=args.stopwords,
-        min_token_length=args.min_token_length,
-        vocab_file=args.vocab_file,
-        min_tokens=args.min_tokens,
-        delete_input=args.delete_input
-    )

@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 import lz4.frame
 import orjson
@@ -22,7 +23,7 @@ def is_file_sorted(file_handler, field, sort_order):
     previous_value = None
 
     with file_handler.open() as infile, tqdm(
-        unit='line', desc="Lines", dynamic_ncols=True
+        unit='line', desc="Lines", dynamic_ncols=True, file=sys.stdout
     ) as pbar:
         for line_number, line in enumerate(infile, start=1):
             # Deserialize the line using FileHandler
@@ -64,62 +65,11 @@ def check_file_sorted(input_file, field, sort_order):
         input_file (str): Path to the file to be checked.
         field (str): Field name to verify sorting on ('ngram' or 'freq_tot').
         sort_order (str): 'ascending' or 'descending'.
-
-    Returns:
-        bool: True if the file is sorted, otherwise False.
     """
     # Create a FileHandler instance for the input file
     file_handler = FileHandler(path=input_file, is_output=False)
     # Reuse the is_file_sorted function to perform the actual check
-    return is_file_sorted(file_handler, field, sort_order)
-
-
-def parse_args():
-    """
-    Parse command-line arguments for checking file sorting.
-
-    Returns:
-        argparse.Namespace: Parsed command-line arguments.
-    """
-    parser = argparse.ArgumentParser(
-        description="Verify whether a JSONL file is sorted based on a specified field."
-    )
-    parser.add_argument(
-        '--input_file',
-        required=True,
-        help="Path to the file to be checked."
-    )
-    parser.add_argument(
-        '--field',
-        required=True,
-        choices=['ngram', 'freq_tot'],
-        help="The field to verify sorting on ('ngram' or 'freq_tot')."
-    )
-    parser.add_argument(
-        '--sort_order',
-        required=True,
-        choices=['ascending', 'descending'],
-        help="The sort order to check ('ascending' or 'descending')."
-    )
-    return parser.parse_args()
-
-
-def main():
-    """
-    Main entry point for command-line usage.
-    """
-    args = parse_args()
-
-    # Perform the check
-    is_sorted = check_file_sorted(args.input_file, args.field, args.sort_order)
-
-    # Print the result
-    if is_sorted:
+    if is_file_sorted(file_handler, field, sort_order):
         print("\nThe file is sorted.")
     else:
         print("\nThe file is not sorted.")
-    print("\nProcessing complete.")
-
-
-if __name__ == "__main__":
-    main()

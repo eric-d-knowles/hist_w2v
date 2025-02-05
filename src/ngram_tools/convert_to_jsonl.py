@@ -6,74 +6,9 @@ from multiprocessing import Pool
 from pathlib import Path
 
 import orjson
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 
 from ngram_tools.helpers.file_handler import FileHandler
-
-
-def parse_args():
-    """
-    Parses command-line arguments.
-
-    Returns:
-        argparse.Namespace: The parsed command-line arguments, including ngram
-        size, ngram type, project directory, file range, overwrite flag,
-        compression flag, number of workers, and delete input flag.
-    """
-    parser = argparse.ArgumentParser(description="Convert ngram files.")
-
-    parser.add_argument(
-        '--ngram_size',
-        type=int,
-        choices=[1, 2, 3, 4, 5],
-        required=True,
-        help='Ngrams size to get (required).'
-    )
-    parser.add_argument(
-        '--ngram_type',
-        type=str,
-        choices=['tagged', 'untagged'],
-        required=True,
-        help='Ngram type to retain (required).'
-    )
-    parser.add_argument(
-        "--proj_dir",
-        type=str,
-        required=True,
-        help='Path to the project base directory.'
-    )
-    parser.add_argument(
-        '--file_range',
-        type=int,
-        nargs=2,
-        help='Range of file indices to get [default = all].'
-    )
-    parser.add_argument(
-        '--overwrite',
-        action='store_true',
-        default=False,
-        help='Overwrite existing files? (default=False).'
-    )
-    parser.add_argument(
-        '--compress',
-        action='store_true',
-        default=False,
-        help='Compress saved files? (default=False).'
-    )
-    parser.add_argument(
-        '--workers',
-        type=int,
-        default=os.cpu_count(),
-        help='Number of processors to use (default=all]).'
-    )
-    parser.add_argument(
-        '--delete_input',
-        action='store_true',
-        default=False,
-        help='Delete input files (default=False).'
-    )
-
-    return parser.parse_args()
 
 
 def construct_output_path(input_file, output_dir, compress):
@@ -175,39 +110,6 @@ def print_info(input_dir, output_dir, file_range, num_files_available,
     print(f'Compress output files:     {compress}')
     print(f'Overwrite existing files:  {overwrite}')
     print(f'Delete input directory:    {delete_input}\n')
-
-
-FIXED_DESC_LENGTH = 15
-BAR_FORMAT = (
-    "{desc:<15} |{bar:50}| {percentage:5.1f}% {n_fmt:<12}/{total_fmt:<12} "
-    "[{elapsed}<{remaining}, {rate_fmt}]"
-)
-
-
-def create_progress_bar(total, description, unit=''):
-    """
-    Creates a progress bar for tracking file conversion progress.
-
-    Args:
-        total (int): The total number of items to process.
-        description (str): A description to display on the progress bar.
-        unit (str, optional): The unit of the items being processed (default is
-        empty).
-
-    Returns:
-        tqdm: A tqdm progress bar object for tracking progress.
-    """
-    return tqdm(
-        file=sys.stdout,
-        total=total,
-        desc=description.ljust(FIXED_DESC_LENGTH),
-        leave=True,
-        dynamic_ncols=False,
-        ncols=100,
-        unit=unit,
-        colour='green',
-        bar_format=BAR_FORMAT
-    )
 
 
 def process_a_line(line, ngram_type):
@@ -342,7 +244,7 @@ def process_a_directory(output_dir, input_paths, output_paths, workers,
         for input_path, output_path in zip(input_paths, output_paths)
     ]
 
-    with create_progress_bar(len(input_paths), "Converting", 'files') as pbar:
+    with tqdm(total=len(input_paths), desc="Converting", unit='files') as pbar:
         with Pool(processes=workers) as pool:
             for _ in pool.imap_unordered(process_a_file, args):
                 pbar.update()
@@ -410,17 +312,3 @@ def convert_to_jsonl_files(ngram_size, ngram_type, proj_dir, file_range=None,
 
     total_runtime = end_time - start_time
     print(f'\033[31mTotal runtime:             {total_runtime}\n\033[0m')
-
-
-if __name__ == "__main__":
-    args = parse_args()
-    convert_to_jsonl_files(
-        ngram_size=args.ngram_size,
-        ngram_type=args.ngram_type,
-        proj_dir=args.proj_dir,
-        file_range=args.file_range,
-        overwrite=args.overwrite,
-        compress=args.compress,
-        workers=args.workers,
-        delete_input=args.delete_input
-    )
