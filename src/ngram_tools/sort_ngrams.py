@@ -9,100 +9,12 @@ from datetime import datetime
 from multiprocessing import Pool, Manager
 from pathlib import Path
 
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 
 from ngram_tools.helpers.file_handler import FileHandler
 
 
-FIXED_DESC_LENGTH = 15
-BAR_FORMAT = (
-    "{desc:<15} |{bar:50}| {percentage:5.1f}% {n_fmt:<12}/{total_fmt:<12} "
-    "[{elapsed}<{remaining}, {rate_fmt}]"
-)
-
 ITER_FILE_REGEX = re.compile(r'^merged_iter_(\d+)_chunk_\d+(\.jsonl(\.lz4)?)?$')
-
-
-def parse_args():
-    """
-    Parse command-line arguments for sorting and merging ngram files.
-
-    Returns:
-        argparse.Namespace: Parsed command-line arguments.
-    """
-    parser = argparse.ArgumentParser(description="Sort and merge files in parallel.")
-
-    parser.add_argument(
-        '--ngram_size',
-        type=int,
-        choices=[1, 2, 3, 4, 5],
-        required=True,
-        help='Ngrams size.'
-    )
-    parser.add_argument(
-        '--proj_dir',
-        type=str,
-        required=True,
-        help='Path to the project base directory.'
-    )
-    parser.add_argument(
-        '--file_range',
-        type=int,
-        nargs=2,
-        help='Range of file indices to process (default=all).'
-    )
-    parser.add_argument(
-        '--overwrite',
-        action='store_true',
-        default=False,
-        help='Overwrite existing files?'
-    )
-    parser.add_argument(
-        '--compress',
-        action='store_true',
-        default=False,
-        help='Compress saved files (default=False).'
-    )
-    parser.add_argument(
-        '--workers',
-        type=int,
-        default=os.cpu_count(),
-        help='Number of processors to use (default=all).'
-    )
-    parser.add_argument(
-        '--delete_input',
-        action='store_true',
-        default=False,
-        help='Delete sorted files after merging?'
-    )
-    parser.add_argument(
-        '--sort_key',
-        type=str,
-        choices=['freq_tot', 'ngram'],
-        default='freq_tot',
-        help="Key to sort on (freq_tot or ngram)."
-    )
-    parser.add_argument(
-        '--sort_order',
-        type=str,
-        choices=['ascending', 'descending'],
-        default='descending',
-        help="Sort order (ascending or descending)."
-    )
-    parser.add_argument(
-        '--start_iteration',
-        type=int,
-        default=1,
-        help="Iteration to start merging from (default=1)."
-    )
-    parser.add_argument(
-        '--end_iteration',
-        type=int,
-        default=None,
-        help="Iteration to stop merging (default=None for all)."
-    )
-
-    return parser.parse_args()
 
 
 def construct_output_path(input_file, output_dir, compress):
@@ -240,24 +152,6 @@ def print_info(
     print(f'Deleted sorted files:      {delete_input}\n')
 
 
-def create_progress_bar(total, description, unit=''):
-    """
-    Create and return a tqdm progress bar with the specified parameters.
-    """
-    padded_desc = description.ljust(FIXED_DESC_LENGTH)
-    return tqdm(
-        file=sys.stdout,
-        total=total,
-        desc=padded_desc,
-        leave=True,
-        dynamic_ncols=False,
-        ncols=100,
-        unit=unit,
-        colour='green',
-        bar_format=BAR_FORMAT
-    )
-
-
 def process_a_file(args):
     """
     Sort a single input file by the specified sort key, then write the sorted
@@ -332,7 +226,7 @@ def process_a_directory(
         for inp, out in handlers
     ]
 
-    with create_progress_bar(len(handlers), "Sorting", 'files') as pbar:
+    with tqdm(total=len(handlers), desc="Sorting", unit='files') as pbar:
         with Manager() as manager:
             progress = manager.Value('i', 0)
 
@@ -592,7 +486,7 @@ def heap_merge_chunk(
 
     with output_handler.open() as outfile:
         if use_progress_bar and total_lines_dir > 0:
-            with create_progress_bar(total_lines_dir, "Merging", "lines") as pbar:
+            with tqdm(total=total_lines_dir, desc="Merging", unit="lines") as pbar:
                 for item in heapq.merge(
                     *file_iters, key=merge_key_func, reverse=reverse
                 ):

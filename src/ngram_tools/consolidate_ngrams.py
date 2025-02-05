@@ -2,45 +2,11 @@ import os
 import sys
 import argparse
 import shutil
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 from datetime import datetime
 from multiprocessing import Pool
 
 from ngram_tools.helpers.file_handler import FileHandler
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Sort, merge, and consolidate files in parallel."
-    )
-
-    parser.add_argument('--ngram_size',
-                        type=int,
-                        choices=[1, 2, 3, 4, 5],
-                        required=True,
-                        help='Ngrams size.')
-    parser.add_argument("--proj_dir",
-                        type=str,
-                        required=True,
-                        help='Path to the project base directory.')
-    parser.add_argument('--compress',
-                        action='store_true',
-                        default=False,
-                        help='Compress saved files?')
-    parser.add_argument('--overwrite',
-                        action='store_true',
-                        default=False,
-                        help='Overwrite existing files?')
-    parser.add_argument('--lines_per_chunk',
-                        type=int,
-                        default=10_000,
-                        help='Number of lines per chunk.')
-    parser.add_argument('--workers',
-                        type=int,
-                        default=os.cpu_count(),
-                        help='Number of worker processes to use.')
-
-    return parser.parse_args()
 
 
 def get_merged_path(merged_dir):
@@ -118,11 +84,9 @@ def create_and_process_chunks(
     input_handler = FileHandler(input_path)
     consolidated_chunk_paths = []
 
-    with input_handler.open() as f, tqdm(  # Open merged file
-        desc="Creating and Processing Chunks",
-        unit=" chunks",
-        dynamic_ncols=True
-    ) as pbar:
+    counter = 0
+    tqdm.write(f"Created and Sorted: {counter} chunks", end="\r")
+    with input_handler.open() as f:
         chunk = []  # Initialize an empty chunk
         last_ngram = None
 
@@ -133,7 +97,7 @@ def create_and_process_chunks(
                 # Get a line and extract the ngram
                 entry = input_handler.deserialize(line)
                 current_ngram = entry['ngram']
-
+                
                 # Check if it's time to consolidate and write a chunk
                 if (
                     len(chunk) >= lines_per_chunk and
@@ -160,7 +124,8 @@ def create_and_process_chunks(
                     )
 
                     chunk = []
-                    pbar.update(1)
+                    counter += 1
+                    tqdm.write(f"Created and Sorted: {counter} chunks", end="\r")
 
                 chunk.append(line)
                 last_ngram = current_ngram
@@ -180,7 +145,8 @@ def create_and_process_chunks(
                         chunk, consolidated_path, compress
                     )
                 ))
-                pbar.update(1)
+                counter += 1
+                tqdm.write(f"Created and Sorted: {counter} chunks")
 
             # Collect results
             consolidated_chunk_paths = [res.get() for res in results]
@@ -230,15 +196,17 @@ def merge_chunks(chunk_files, final_output_path, compress):
         final_output_path, is_output=True, compress=compress
     )
 
-    with output_handler.open() as outfile, tqdm(
-        desc="Merging Chunks", unit=" chunks", dynamic_ncols=True
-    ) as pbar:
+    counter = 0
+    tqdm.write(f"Merged: {counter} chunks", end="\r")
+    with output_handler.open() as outfile:
         for chunk_path in sorted(chunk_files):
             handler = FileHandler(chunk_path)
             with handler.open() as infile:
                 for line in infile:
                     outfile.write(line)
-                pbar.update(1)
+                counter += 1
+                tqdm.write(f"Merged: {counter} chunks", end="\r")
+    print("\n")
 
 
 def consolidate_duplicate_ngrams(
@@ -288,15 +256,3 @@ def consolidate_duplicate_ngrams(
 
     total_runtime = end_time - start_time
     print(f'\033[31mTotal runtime:             {total_runtime}\n\033[0m')
-
-
-if __name__ == "__main__":
-    args = parse_args()
-    consolidate_duplicate_ngrams(
-        ngram_size=args.ngram_size,
-        proj_dir=args.proj_dir,
-        compress=args.compress,
-        overwrite=args.overwrite,
-        lines_per_chunk=args.lines_per_chunk,
-        workers=args.workers
-    )

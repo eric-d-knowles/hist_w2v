@@ -8,53 +8,12 @@ from datetime import datetime
 from multiprocessing import Pool
 
 import requests
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 
 from ngram_tools.helpers.file_handler import FileHandler
 
 
-def parse_args():
-    """
-    Parses command-line arguments.
-
-    Returns:
-        argparse.Namespace: The parsed arguments.
-    """
-    parser = argparse.ArgumentParser(description="Download ngrams.")
-
-    parser.add_argument(
-        '--ngram_size', type=int, choices=[1, 2, 3, 4, 5],
-        required=True, help='Ngrams size to get (required).'
-    )
-    parser.add_argument(
-        '--ngram_type', type=str, choices=['tagged', 'untagged'],
-        required=True, help='Ngram type to retain (required).'
-    )
-    parser.add_argument(
-        '--proj_dir', type=str, required=True,
-        help="Local project directory (required)."
-    )
-    parser.add_argument(
-        '--file_range', type=int, nargs=2,
-        help='File index range to get (default=all).'
-    )
-    parser.add_argument(
-        '--overwrite', action='store_true', default=False,
-        help='Overwrite existing files? (default=False).'
-    )
-    parser.add_argument(
-        '--compress', action='store_true', default=False,
-        help='Compress saved files? (default=False).'
-    )
-    parser.add_argument(
-        '--workers', type=int, default=os.cpu_count(),
-        help='Number of processors to use (default=all]).'
-    )
-
-    return parser.parse_args()
-
-
-def set_location_info(ngram_size, proj_dir):
+def set_location_info(ngram_size, repo_release_id, repo_corpus_id, proj_dir):
     """
     Sets the repository URL and file patterns based on ngram size and project
     dir.
@@ -67,7 +26,8 @@ def set_location_info(ngram_size, proj_dir):
         tuple: ngram_repo_url, file_pattern, output_dir
     """
     ngram_repo_url = f'https://storage.googleapis.com/books/ngrams/' \
-                     f'books/20200217/eng/eng-{ngram_size}-ngrams_exports.html'
+                     f'books/{repo_release_id}/{repo_corpus_id}/' \
+                     f'{repo_corpus_id}-{ngram_size}-ngrams_exports.html'
     file_pattern = rf'{ngram_size}-\d{{5}}-of-\d{{5}}\.gz'
     output_dir = os.path.join(f'{proj_dir}',
                               f'{ngram_size}gram_files/1download')
@@ -158,38 +118,6 @@ def print_info(ngram_repo_url, output_dir, file_range, file_urls_available,
     print(f'Overwrite existing files:  {overwrite}\n')
 
 
-FIXED_DESC_LENGTH = 15
-BAR_FORMAT = (
-    "{desc:<15} |{bar:50}| {percentage:5.1f}% {n_fmt:<12}/{total_fmt:<12} "
-    "[{elapsed}<{remaining}, {rate_fmt}]"
-)
-
-
-def create_progress_bar(total, description, unit=''):
-    """
-    Creates a progress bar using tqdm.
-
-    Args:
-        total (int): The total number of items to process.
-        description (str): The description for the progress bar.
-        unit (str): The unit for the progress bar.
-
-    Returns:
-        tqdm: The progress bar instance.
-    """
-    return tqdm(
-        file=sys.stdout,
-        total=total,
-        desc=description.ljust(FIXED_DESC_LENGTH),
-        leave=True,
-        dynamic_ncols=False,
-        ncols=100,
-        unit=unit,
-        colour='green',
-        bar_format=BAR_FORMAT
-    )
-
-
 def process_a_file(args):
     """
     Downloads and processes a single file from the URL.
@@ -245,15 +173,16 @@ def process_files_in_parallel(file_urls_to_use, output_dir, workers,
         (url, output_dir, find_regex, overwrite, compress)
         for url in file_urls_to_use
     ]
-    with create_progress_bar(
-        len(file_urls_to_use), "Downloading", 'files'
+    with tqdm(
+        total=len(file_urls_to_use), desc="Downloading", unit='files'
     ) as pbar:
         with Pool(processes=workers) as pool:
             for _ in pool.imap_unordered(process_a_file, args):
                 pbar.update()
 
 
-def download_ngram_files(ngram_size, ngram_type, proj_dir, file_range=None,
+def download_ngram_files(ngram_size, ngram_type, repo_release_id,
+                         repo_corpus_id, proj_dir, file_range=None,
                          overwrite=False, compress=False,
                          workers=os.cpu_count()):
     """
@@ -263,8 +192,12 @@ def download_ngram_files(ngram_size, ngram_type, proj_dir, file_range=None,
         args (argparse.Namespace): The parsed command-line arguments.
     """
 
-    ngram_repo_url, file_pattern, output_dir = set_location_info(ngram_size,
-                                                                 proj_dir)
+    (ngram_repo_url,
+     file_pattern,
+     output_dir) = set_location_info(ngram_size,
+                                     repo_release_id,
+                                     repo_corpus_id,
+                                     proj_dir)
     start_time = datetime.now()
     file_urls_available = fetch_file_urls(ngram_repo_url, file_pattern)
 
@@ -284,16 +217,3 @@ def download_ngram_files(ngram_size, ngram_type, proj_dir, file_range=None,
     print(f'\033[31m\nEnd Time:                  {end_time}\033[0m')
     total_runtime = end_time - start_time
     print(f'\033[31mTotal runtime:             {total_runtime}\n\033[0m')
-
-
-if __name__ == "__main__":
-    args = parse_args()
-    download_ngram_files(
-        ngram_size=args.ngram_size,
-        ngram_type=args.ngram_type,
-        proj_dir=args.proj_dir,
-        file_range=args.file_range,
-        overwrite=args.overwrite,
-        compress=args.compress,
-        workers=args.workers
-    )

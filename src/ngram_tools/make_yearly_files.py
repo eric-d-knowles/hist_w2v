@@ -6,83 +6,9 @@ import uuid
 from collections import defaultdict
 from datetime import datetime
 from multiprocessing import Pool
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 
 from ngram_tools.helpers.file_handler import FileHandler
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Split a JSONL corpus file into yearly files."
-    )
-    parser.add_argument(
-        '--ngram_size',
-        type=int,
-        choices=[1, 2, 3, 4, 5],
-        required=True,
-        help='Ngrams size.'
-    )
-    parser.add_argument(
-        '--proj_dir',
-        type=str,
-        required=True,
-        help='Path to the project base directory.'
-    )
-    parser.add_argument(
-        '--compress',
-        action='store_true',
-        help='Compress the output files.'
-    )
-    parser.add_argument(
-        '--workers',
-        type=int,
-        default=os.cpu_count(),
-        help='Number of worker processes to use. Default is all available.'
-    )
-    parser.add_argument(
-        '--chunk_size',
-        type=int,
-        default=1000,
-        help='Number of lines to process per chunk. Default is 1000.'
-    )
-    parser.add_argument(
-        '--overwrite',
-        action='store_true',
-        help='Overwrite existing yearly files.'
-    )
-    return parser.parse_args()
-
-
-FIXED_DESC_LENGTH = 15
-BAR_FORMAT = (
-    "{desc:<15} |{bar:50}| {percentage:5.1f}% {n_fmt:<12}/{total_fmt:<12} "
-    "[{elapsed}<{remaining}, {rate_fmt}]"
-)
-
-
-def create_progress_bar(total, description, unit=''):
-    """
-    Creates a progress bar using tqdm.
-
-    Args:
-        total (int): The total number of items to process.
-        description (str): The description for the progress bar.
-        unit (str): The unit for the progress bar.
-
-    Returns:
-        tqdm: The progress bar instance.
-    """
-    return tqdm(
-        file=sys.stdout,
-        total=total,
-        desc=description.ljust(FIXED_DESC_LENGTH),
-        leave=True,
-        dynamic_ncols=False,
-        ncols=100,
-        unit=unit,
-        colour='green',
-        bar_format=BAR_FORMAT
-    )
 
 
 def get_corpus_path(corpus_dir):
@@ -116,7 +42,7 @@ def set_info(ngram_size, proj_dir, compress):
     """
     corpus_dir = os.path.join(proj_dir, f'{ngram_size}gram_files', '6corpus')
     corpus_path = get_corpus_path(corpus_dir)
-    yearly_dir = os.path.join(corpus_dir, 'yearly_files')
+    yearly_dir = os.path.join(corpus_dir, 'yearly_files/data')
 
     return corpus_path, yearly_dir
 
@@ -158,20 +84,22 @@ def process_ngram_line(line):
     return yearly_data
 
 
-def chunk_generator(infile, chunk_size, pbar, temp_dir, compress):
+def chunk_generator(infile, chunk_size, temp_dir, compress):
     """
     Yields one chunk at a time (plus metadata), so we never store all chunks in memory.
     """
     chunk_buffer = []
     chunk_id = 0
     for line in infile:
-        pbar.update(1)     # Update progress bar for each line read
         chunk_buffer.append(line)
 
         if len(chunk_buffer) >= chunk_size:
             yield (chunk_buffer, chunk_id, temp_dir, compress)
             chunk_buffer = []
             chunk_id += 1
+            tqdm.write(f"Created and processed {chunk_id} chunks", end="\r")
+
+    tqdm.write(f"Created and processed {chunk_id} chunks", end="\n")
 
     # Yield any leftover lines as a final chunk
     if chunk_buffer:
@@ -240,8 +168,6 @@ def merge_temp_files(temp_dir, final_dir, compress, overwrite):
     file, e.g. "1987.jsonl" (or "1987.jsonl.lz4" if compressed).
     Now parallelized per year.
     """
-    print("\nMerging temporary files into yearly files:")
-
     # Decide on chunk-file extension
     chunk_ext = ".jsonl.lz4" if compress else ".jsonl"
 
@@ -265,15 +191,15 @@ def merge_temp_files(temp_dir, final_dir, compress, overwrite):
         tasks.append((year, file_list, final_path, compress, overwrite))
 
     # Use a Pool of workers to merge different years in parallel
-    with create_progress_bar(
-        description="Years merged",
-        unit=" years",
-        total=num_unique_years
-    ) as pbar, Pool() as pool:
+    counter = 0
+    with Pool() as pool:
         # imap_unordered yields results as soon as each worker finishes
         for _ in pool.imap_unordered(merge_one_year, tasks):
             # Each time we get a result (a 'year' merged), update the bar
-            pbar.update(1)
+            counter += 1
+            tqdm.write(f"Merged temp files for {counter} years", end="\r")
+            
+    tqdm.write(f"Merged temp files for {counter} years", end="\n")
 
 
 def process_corpus_file(
@@ -293,18 +219,12 @@ def process_corpus_file(
 
     input_handler = FileHandler(corpus_path)
 
-    # -- Open the input file and a progress bar --
-    with input_handler.open() as infile, tqdm(
-        desc="Reading & chunking",
-        unit=" lines",
-        dynamic_ncols=True
-    ) as pbar, Pool(processes=workers) as pool:
+    with input_handler.open() as infile, Pool(processes=workers) as pool:
 
         # 1) Create the generator so it yields chunks on-the-fly
         gen = chunk_generator(
             infile=infile,
             chunk_size=chunk_size,
-            pbar=pbar,
             temp_dir=temp_dir,
             compress=compress
         )
@@ -362,15 +282,3 @@ def make_yearly_files(
 
     total_runtime = end_time - start_time
     print(f'\033[31mTotal runtime:             {total_runtime}\n\033[0m')
-
-
-if __name__ == "__main__":
-    args = parse_args()
-    make_yearly_files(
-        ngram_size=args.ngram_size,
-        proj_dir=args.proj_dir,
-        overwrite=args.overwrite,
-        compress=args.compress,
-        workers=args.workers,
-        chunk_size=args.chunk_size
-    )

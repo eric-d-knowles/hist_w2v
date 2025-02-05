@@ -3,55 +3,13 @@ import sys
 import argparse
 import heapq
 from datetime import datetime
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 import tempfile
 import multiprocessing
 import orjson
 import shutil
 
-
 from ngram_tools.helpers.file_handler import FileHandler
-
-
-FIXED_DESC_LENGTH = 15
-BAR_FORMAT = (
-    "{desc:<15} |{bar:50}| {percentage:5.1f}% {n_fmt:<12}/{total_fmt:<12} \
-    [{elapsed}<{remaining}, {rate_fmt}]"
-)
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Sort corpus file by freq_tot in descending order, "
-                    "index the ngrams, and optionally create a vocab file."
-    )
-
-    parser.add_argument('--proj_dir',
-                        type=str,
-                        required=True,
-                        help='Base project directory (required).')
-    parser.add_argument('--ngram_size',
-                        type=int,
-                        required=True,
-                        help='Size of the ngrams (required).')
-    parser.add_argument('--compress',
-                        action='store_true',
-                        default=False,
-                        help='Compress saved files?')
-    parser.add_argument('--overwrite',
-                        action='store_true',
-                        default=False,
-                        help='Overwrite existing files (default=False).')
-    parser.add_argument('--workers',
-                        type=int,
-                        default=os.cpu_count(),
-                        help='Number of processors to use (default=all).')
-    parser.add_argument('--vocab_n',
-                        type=int,
-                        help='Produce vocab_list_match and vocab_list_lookup '
-                             'with the top N ngrams.')
-
-    return parser.parse_args()
 
 
 def get_corpus_path(corpus_dir):
@@ -126,21 +84,6 @@ def print_info(start_time, corpus_path, indexed_path, ngram_size,
         print(f'Lookup File:               {lookup_path}\n')
 
 
-def create_progress_bar(total, description, unit=''):
-    padded_desc = description.ljust(FIXED_DESC_LENGTH)
-    return tqdm(
-        file=sys.stdout,
-        total=total,
-        desc=padded_desc,
-        leave=True,
-        dynamic_ncols=False,
-        ncols=100,
-        unit=unit,
-        colour='green',
-        bar_format=BAR_FORMAT
-    )
-
-
 def chunk_sort(args):
     """
     Worker function to sort a chunk of data by freq_tot descending.
@@ -201,8 +144,8 @@ def external_sort_descending_by_freq(
     in_handler = FileHandler(corpus_path, is_output=False)
     out_handler = FileHandler(corpus_path, is_output=True, compress=True)
 
-    with in_handler.open() as infile, create_progress_bar(
-        total_lines, 'Chunking', 'lines'
+    with in_handler.open() as infile, tqdm(
+        total=total_lines, desc='Chunking', unit='lines'
     ) as pbar:
         for line in infile:
             current_chunk.append(line)
@@ -217,8 +160,8 @@ def external_sort_descending_by_freq(
 
     # Step 3: Sort chunks in parallel
     with multiprocessing.Pool(processes=workers) as pool:
-        with create_progress_bar(
-            len(chunk_paths), 'Sorting', 'chunks'
+        with tqdm(
+            total=len(chunk_paths), desc='Sorting', unit='chunks'
         ) as pbar:
             sorted_chunk_paths = []
             for chunk_result in pool.imap(chunk_sort, chunk_paths):
@@ -244,7 +187,7 @@ def external_sort_descending_by_freq(
     out_handler = FileHandler(
         merged_sorted_path, is_output=True, compress=compress)
     with out_handler.open() as outfile, \
-         create_progress_bar(total_lines, "Merging", "lines") as pbar:
+         tqdm(total=total_lines, desc="Merging", unit="lines") as pbar:
 
         # Merge in descending order by freq_tot
         for obj in heapq.merge(
@@ -283,10 +226,10 @@ def index_ngrams(
 
     with in_handler.open() as infile, \
          out_handler.open() as outfile, \
-         create_progress_bar(
-             total_lines,
-             "Indexing",
-             "lines"
+         tqdm(
+             total=total_lines,
+             desc="Indexing",
+             unit="lines"
          ) as pbar:
         idx = 1
         for line in infile:
@@ -405,15 +348,3 @@ def index_and_create_vocab_files(
 
     total_runtime = end_time - start_time
     print(f'\033[31mTotal runtime:             {total_runtime}\n\033[0m')
-
-
-if __name__ == "__main__":
-    args = parse_args()
-    index_and_create_vocab_files(
-        proj_dir=args.proj_dir,
-        ngram_size=args.ngram_size,
-        compress=args.compress,
-        overwrite=args.overwrite,
-        workers=args.workers,
-        vocab_n=args.vocab_n
-    )

@@ -6,65 +6,9 @@ from multiprocessing import Pool
 from pathlib import Path
 
 import orjson
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 
 from ngram_tools.helpers.file_handler import FileHandler
-
-
-def parse_args():
-    """
-    Parse command-line arguments for lowercasing ngrams.
-
-    Returns:
-        argparse.Namespace: Parsed command-line arguments.
-    """
-    parser = argparse.ArgumentParser(description="Lowercase ngrams.")
-
-    parser.add_argument(
-        '--ngram_size',
-        type=int,
-        choices=[1, 2, 3, 4, 5],
-        required=True,
-        help='Ngram size to process (required).'
-    )
-    parser.add_argument(
-        "--proj_dir",
-        type=str,
-        required=True,
-        help='Path to the project base directory.'
-    )
-    parser.add_argument(
-        '--file_range',
-        type=int,
-        nargs=2,
-        help='Range of file indices to process [default=all].'
-    )
-    parser.add_argument(
-        '--overwrite',
-        action='store_true',
-        default=False,
-        help='Overwrite existing files? (default=False).'
-    )
-    parser.add_argument(
-        '--compress',
-        action='store_true',
-        default=False,
-        help='Compress saved files? (default=False).'
-    )
-    parser.add_argument(
-        '--workers',
-        type=int,
-        default=os.cpu_count(),
-        help='Number of processors to use (default=all).'
-    )
-    parser.add_argument(
-        '--delete_input',
-        action='store_true',
-        default=False,
-        help='Delete input files (default=False).'
-    )
-
-    return parser.parse_args()
 
 
 def construct_output_path(input_file, output_dir, compress):
@@ -181,38 +125,6 @@ def print_info(input_dir, output_dir, file_range, num_files_available,
     print(f'Delete input directory:    {delete_input}\n')
 
 
-FIXED_DESC_LENGTH = 15
-BAR_FORMAT = (
-    "{desc:<15} |{bar:50}| {percentage:5.1f}% {n_fmt:<12}/{total_fmt:<12} "
-    "[{elapsed}<{remaining}, {rate_fmt}]"
-)
-
-
-def create_progress_bar(total, description, unit=''):
-    """
-    Create a tqdm progress bar with a fixed description length and custom format.
-
-    Args:
-        total (int): Total number of items for the progress bar.
-        description (str): Label or short message describing the progress bar.
-        unit (str, optional): Unit of measurement (e.g., 'files').
-
-    Returns:
-        tqdm.std.tqdm: Configured tqdm progress bar object.
-    """
-    return tqdm(
-        file=sys.stdout,
-        total=total,
-        desc=description.ljust(FIXED_DESC_LENGTH),
-        leave=True,
-        dynamic_ncols=False,
-        ncols=100,
-        unit=unit,
-        colour='green',
-        bar_format=BAR_FORMAT
-    )
-
-
 def process_a_line(line):
     """
     Process a single line of JSON by converting the 'ngram' tokens to lowercase.
@@ -298,7 +210,7 @@ def process_a_directory(output_dir, input_paths, output_paths, workers,
 
     args = [(in_handler, out_handler, overwrite) for in_handler, out_handler in handlers]
 
-    with create_progress_bar(len(handlers), "Lowercasing", 'files') as pbar:
+    with tqdm(total=len(handlers), desc="Lowercasing", unit='files') as pbar:
         with Pool(processes=workers) as pool:
             for _ in pool.imap_unordered(process_a_file, args):
                 pbar.update()
@@ -366,16 +278,3 @@ def lowercase_ngrams(ngram_size, proj_dir, file_range=None, overwrite=False,
 
     total_runtime = end_time - start_time
     print(f'\033[31mTotal runtime:             {total_runtime}\n\033[0m')
-
-
-if __name__ == "__main__":
-    args = parse_args()
-    lowercase_ngrams(
-        ngram_size=args.ngram_size,
-        proj_dir=args.proj_dir,
-        file_range=args.file_range,
-        overwrite=args.overwrite,
-        compress=args.compress,
-        workers=args.workers,
-        delete_input=args.delete_input
-    )

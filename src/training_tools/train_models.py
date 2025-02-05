@@ -136,37 +136,26 @@ def configure_logging(log_dir, filename):
     """
     os.makedirs(log_dir, exist_ok=True)
     log_file_path = os.path.join(log_dir, filename)
-
-    # Create a logger named after the filename
     logger_name = os.path.splitext(filename)[0]
+    
+    # 1) Create your local logger
     logger = logging.getLogger(logger_name)
     logger.setLevel(logging.INFO)
-
-    # Remove existing handlers to avoid duplicate logs
-    if logger.hasHandlers():
-        logger.handlers.clear()
-
-    if not logger.hasHandlers():
-        # Create and configure a file handler
-        file_handler = logging.FileHandler(log_file_path, mode="w")
-        file_handler.setFormatter(
-            logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-            )
-        )
-        logger.addHandler(file_handler)
-
-        # Attach the handler to Gensim's logger to include its output
-        gensim_logger = logging.getLogger("gensim")
-        gensim_logger.setLevel(logging.INFO)
-        if (
-            not any(
-                isinstance(h, logging.FileHandler)
-                and h.baseFilename == log_file_path for h in gensim_logger.handlers
-            )
-        ):
-            gensim_logger.addHandler(file_handler)
-
+    logger.handlers.clear()
+    
+    # 2) Create a brand-new file handler (mode='w' overwrites each run)
+    file_handler = logging.FileHandler(log_file_path, mode="w")
+    file_handler.setFormatter(
+        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    )
+    logger.addHandler(file_handler)
+    
+    # 3) Now attach it to the *global* gensim logger, but first remove old handlers
+    gensim_logger = logging.getLogger("gensim")
+    gensim_logger.handlers.clear()  # remove old file handlers from previous runs
+    gensim_logger.setLevel(logging.INFO)
+    gensim_logger.addHandler(file_handler)
+    
     return logger
 
 
@@ -202,10 +191,13 @@ def train_word2vec(
 
 
 def train_model(year, data_dir, model_dir, log_dir, weight_by, vector_size,
-                window, min_count, sg, epochs, workers):
+                window, min_count, approach, epochs, workers):
     """
     Train a Word2Vec model for a specific year.
     """
+
+    sg = 1 if approach == 'skip-gram' else 0
+
     name_string = (
         f"y{year}_wb{weight_by}_vs{vector_size}_w{window}_"
         f"mc{min_count}_sg{sg}_e{epochs}"
@@ -266,22 +258,11 @@ def train_models(
     """
     Train Word2Vec models for multiple years.
     """
-    mapping = {'skip-gram': 1, 'CBOW': 0}
-    sg = mapping.get(approach)
-
-    if sg is None:
-        logging.info(
-            "Invalid approach: Must be 'CBOW' or 'skip-gram'. "
-            "Defaulting to CBOW."
-        )
-        sg = 0
-
     weight_by = ensure_iterable(weight_by)
     vector_size = ensure_iterable(vector_size)
     window = ensure_iterable(window)
     min_count = ensure_iterable(min_count)
     approach = ensure_iterable(approach)
-    sg = ensure_iterable(sg)
     epochs = ensure_iterable(epochs)
 
     start_time, data_dir, model_dir, log_dir = set_info(ngram_size, proj_dir)
@@ -306,7 +287,7 @@ def train_models(
     )
 
     param_combinations = list(
-        product(weight_by, vector_size, window, min_count, sg, epochs)
+        product(weight_by, vector_size, window, min_count, approach, epochs)
     )
     years = range(years[0], years[1] + 1)
 

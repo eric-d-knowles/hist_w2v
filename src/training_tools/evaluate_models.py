@@ -9,6 +9,8 @@ from gensim.test.utils import datapath
 from tqdm.notebook import tqdm
 import pandas as pd
 from multiprocessing import Pool
+from training_tools.w2v_model import W2VModel
+from gensim.test.utils import datapath
 
 
 def parse_args():
@@ -140,20 +142,13 @@ def evaluate_a_model(model_path, similarity_dataset, analogy_dataset, model_logg
     Run intrinsic evaluations on a Word2Vec model, using a model-specific logger.
     """
     model_logger.info(f"Loading KeyedVectors from: {model_path}")
-    try:
-        model = KeyedVectors.load(model_path)
-    except Exception as e:
-        model_logger.error(f"Failed to load KeyedVectors from {model_path}: {e}")
-        return None
 
-    # Word similarity evaluation
-    sim_results = model.evaluate_word_pairs(similarity_dataset)
-    similarity_score = sim_results[0][0]  # Spearman correlation
+    model = W2VModel(model_path)
+
+    similarity_score = model.evaluate("similarity", similarity_dataset)
     model_logger.info(f"Similarity Score (Spearman): {similarity_score}")
 
-    # Word analogy evaluation
-    analogy_results = model.evaluate_word_analogies(analogy_dataset)
-    analogy_score = analogy_results[0]  # Overall accuracy
+    analogy_score = model.evaluate("analogy", analogy_dataset)
     model_logger.info(f"Analogy Score: {analogy_score}")
 
     return {
@@ -326,7 +321,7 @@ def evaluate_models(
         analogy_dataset
     )
     if not info:
-        return  # set_info encountered a problem and already logged an error
+        return
 
     (
         start_time,
