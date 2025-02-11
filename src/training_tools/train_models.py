@@ -19,7 +19,7 @@ def ensure_iterable(param):
     return param if isinstance(param, (tuple, list)) else (param,)
 
 
-def set_info(ngram_size, proj_dir):
+def set_info(ngram_size, proj_dir, dir_suffix):
     """
     Set up project paths for data, models, and logs.
 
@@ -35,10 +35,10 @@ def set_info(ngram_size, proj_dir):
         proj_dir, f"{ngram_size}gram_files/6corpus/yearly_files/data"
     )
     model_dir = os.path.join(
-        proj_dir, f"{ngram_size}gram_files/6corpus/yearly_files/models"
+        proj_dir, f"{ngram_size}gram_files/6corpus/yearly_files/models_{dir_suffix}"
     )
     log_dir = os.path.join(
-        proj_dir, f"{ngram_size}gram_files/6corpus/yearly_files/logs/training"
+        proj_dir, f"{ngram_size}gram_files/6corpus/yearly_files/logs_{dir_suffix}/training"
     )
     return start_time, data_dir, model_dir, log_dir
 
@@ -246,6 +246,7 @@ def train_model(year, data_dir, model_dir, log_dir, weight_by, vector_size,
 def train_models(
     ngram_size,
     proj_dir,
+    dir_suffix,
     years,
     weight_by=('freq',),
     vector_size=(100,),
@@ -265,7 +266,8 @@ def train_models(
     approach = ensure_iterable(approach)
     epochs = ensure_iterable(epochs)
 
-    start_time, data_dir, model_dir, log_dir = set_info(ngram_size, proj_dir)
+    start_time, data_dir, model_dir, log_dir = set_info(ngram_size, proj_dir,
+                                                       dir_suffix)
 
     grid_params = (
         f'  Weighting:           {weight_by}\n'
@@ -292,8 +294,8 @@ def train_models(
     years = range(years[0], years[1] + 1)
 
     tasks = [
-        (year, data_dir, model_dir, log_dir, params[0], params[1],
-         params[2], params[3], params[4], params[5], workers)
+        (year, data_dir, model_dir, log_dir, params[0], params[1], params[2],
+         params[3], params[4], params[5], workers)
         for year in years for params in param_combinations
     ]
 
@@ -303,97 +305,3 @@ def train_models(
             for future in futures:
                 future.result()
                 pbar.update(1)
-
-
-def parse_args():
-    """
-    Parse command-line arguments for model training.
-    """
-    parser = argparse.ArgumentParser(description="Train Word2Vec models.")
-    parser.add_argument(
-        "--ngram_size",
-        type=int,
-        choices=[1, 2, 3, 4, 5],
-        required=True,
-        help="Ngram size."
-    )
-    parser.add_argument(
-        "--proj_dir",
-        type=str,
-        required=True,
-        help="Project directory."
-    )
-    parser.add_argument(
-        "--start_year",
-        type=int,
-        required=True,
-        help="Start year."
-    )
-    parser.add_argument(
-        "--end_year",
-        type=int,
-        required=True,
-        help="End year."
-    )
-    parser.add_argument(
-        "--weight_by",
-        type=str,
-        choices=['none', 'freq', 'doc_freq'],
-        default='none',
-        help='Ngram weighting strategy.'
-    )
-    parser.add_argument(
-        "--vector_size",
-        type=int,
-        default=100,
-        help="Number of vector dimensions."
-    )
-    parser.add_argument(
-        "--window",
-        type=int,
-        choices=[1, 2, 3, 4, 5],
-        default=3,
-        help="Width of context window."
-    )
-    parser.add_argument(
-        "--min_count",
-        type=int,
-        default=1,
-        help="Minimum ngram frequency."
-    ),
-    parser.add_argument(
-        "--approach",
-        type=str,
-        choices=['CBOW', 'skip-gram'],
-        default='CBOW',
-        help="CBOW = 0, skip-gram = 1."
-    ),
-    parser.add_argument(
-        "--epochs",
-        type=int,
-        default=5,
-        help="Number of training epochs."
-    ),
-    parser.add_argument(
-        "--workers",
-        type=int,
-        default=os.cpu_count(),
-        help="Number of workers."
-    )
-    return parser.parse_args()
-
-
-if __name__ == "__main__":
-    args = parse_args()
-    train_models(
-        ngram_size=args.ngram_size,
-        proj_dir=args.proj_dir,
-        years=(args.start_year, args.end_year),
-        weight_by=args.weight_by,
-        vector_size=args.vector_size,
-        window=args.window,
-        min_count=args.min_count,
-        approach=args.approach,
-        epochs=args.epochs,
-        workers=args.workers
-    )

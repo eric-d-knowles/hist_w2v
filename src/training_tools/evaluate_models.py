@@ -13,60 +13,10 @@ from training_tools.w2v_model import W2VModel
 from gensim.test.utils import datapath
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Evaluate Word2Vec models on intrinsic tasks."
-    )
-    parser.add_argument(
-        "--ngram_size",
-        type=int,
-        choices=[1, 2, 3, 4, 5],
-        required=True,
-        help="Ngram size."
-    )
-    parser.add_argument(
-        '--proj_dir',
-        type=str,
-        required=True,
-        help='Directory containing Word2Vec models.'
-    )
-    parser.add_argument(
-        '--similarity_dataset',
-        type=str,
-        default=None,
-        help='Path to similarity data (leave empty for Gensim default).'
-    )
-    parser.add_argument(
-        '--analogy_dataset',
-        type=str,
-        default=None,
-        help='Path to analogy data (leave empty for Gensim default).'
-    )
-    parser.add_argument(
-        '--eval_dir',
-        type=str,
-        default="evaluation_results.csv",
-        help='Path to directory to store evaluation results.'
-    )
-    parser.add_argument(
-        '--save_mode',
-        type=str,
-        choices=['overwrite', 'append'],
-        default="append",
-        help='Path to directory to store evaluation results.'
-    )
-    parser.add_argument(
-        '--workers',
-        type=int,
-        default=os.cpu_count(),
-        help='Number of parallel workers to evaluate the models.'
-    )
-    return parser.parse_args()
-
-
 def set_info(
     ngram_size,
     proj_dir,
+    dir_suffix,
     eval_dir,
     similarity_dataset,
     analogy_dataset
@@ -78,7 +28,7 @@ def set_info(
 
     # Construct path to models
     model_dir = os.path.join(
-        proj_dir, f"{ngram_size}gram_files/6corpus/yearly_files/models"
+        proj_dir, f"{ngram_size}gram_files/6corpus/yearly_files/models_{dir_suffix}"
     )
     if not os.path.exists(model_dir):
         logging.error(f"Specified model directory does not exist: {model_dir}")
@@ -86,14 +36,14 @@ def set_info(
 
     # Construct evaluation output file path
     if os.path.exists(eval_dir):
-        eval_file = os.path.join(eval_dir, "evaluation_results.csv")
+        eval_file = os.path.join(eval_dir, f"evaluation_results_{dir_suffix}.csv")
     else:
         logging.error(f"Specified evaluation directory does not exist: {eval_dir}")
         return
 
     # Construct logging path (and create if necessary)
     log_dir = os.path.join(
-        proj_dir, f"{ngram_size}gram_files/6corpus/yearly_files/logs/evaluation"
+        proj_dir, f"{ngram_size}gram_files/6corpus/yearly_files/logs_{dir_suffix}/evaluation"
     )
     os.makedirs(log_dir, exist_ok=True)
 
@@ -307,6 +257,7 @@ def evaluate_models_in_directory(
 def evaluate_models(
     ngram_size,
     proj_dir,
+    dir_suffix,
     eval_dir,
     save_mode,
     similarity_dataset=None,
@@ -316,6 +267,7 @@ def evaluate_models(
     info = set_info(
         ngram_size,
         proj_dir,
+        dir_suffix,
         eval_dir,
         similarity_dataset,
         analogy_dataset
@@ -351,18 +303,4 @@ def evaluate_models(
         similarity_dataset=similarity_dataset,
         analogy_dataset=analogy_dataset,
         workers=workers
-    )
-
-
-if __name__ == "__main__":
-    args = parse_args()
-
-    evaluate_models(
-        ngram_size=args.ngram_size,
-        proj_dir=args.proj_dir,
-        eval_dir=args.eval_dir,
-        save_mode=args.save_mode,
-        similarity_dataset=args.similarity_dataset,
-        analogy_dataset=args.analogy_dataset,
-        workers=args.workers
     )
