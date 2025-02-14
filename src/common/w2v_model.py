@@ -1,6 +1,7 @@
 import os
 from gensim.models import KeyedVectors
 import numpy as np
+import random
 from scipy.linalg import orthogonal_procrustes
 
 
@@ -257,33 +258,120 @@ class W2VModel:
     
         return self.model.similarity(word1, word2)
 
-    def compute_weat(self, category1, category2, target1, target2):
+    def cosine_similarity_mean(self, reference_model):
         """
-        Compute the Word Embedding Association Test (WEAT) effect size (Cohen's d).
+        Compute the mean cosine similarity with a reference model across shared words.
+        
+        Args:
+            reference_model (W2VModel): The anchor model (reference).
+        
+        Returns:
+            float: The mean cosine similarity of shared words, or None if no shared words exist.
         """
-        missing_words = [word for word in (category1 + category2 + target1 + target2) if word not in self.vocab]
+        common_words = self.vocab.intersection(reference_model.vocab)
+        
+        if not common_words:
+            print("⚠️ Warning: No shared words between models.")
+            return None
+    
+        similarities = [
+            np.dot(self.model[word], reference_model.model[word]) for word in common_words
+        ]
+    
+        return np.mean(similarities)
+
+    def mean_cosine_similarity_to_all(self, word, excluded_words=None):
+        """
+        Compute the mean cosine similarity of a given word with every other word in the vocabulary.
+    
+        Args:
+            word (str): The word for which to compute the mean similarity.
+    
+        Returns:
+            float: Mean cosine similarity score of the word with all other words in the vocabulary.
+    
+        Raises:
+            KeyError: If the word is not in the vocabulary.
+        """
+        if word not in self.vocab:
+            raise KeyError(f"Word '{word}' is not in the vocabulary.")
+
+        total_similarity = 0
+        count = 0
+    
+        for other_word in self.vocab:
+            if other_word == word or other_word in excluded_words:
+                continue  # Skip self-similarity
+            total_similarity += self.cosine_similarity(word, other_word)
+            count += 1
+    
+        return total_similarity / count if count > 0 else 0
+
+    def compute_weat(self, targ1, targ2, attr1, attr2, num_permutations=10000, return_std=False):
+        """
+        Compute WEAT effect size, p-value, and optionally return standard deviation from permutations.
+        Fully follows Caliskan et al.'s method.
+        """
+        missing_words = [word for word in (targ1 + targ2 + attr1 + attr2) if word not in self.vocab]
         if missing_words:
-            raise ValueError(f"Missing words in model vocabulary: {missing_words}")
-        
+            print(f"⚠️ Warning: The following words are missing from the model and will be ignored: {missing_words}")
+    
         def cosine_similarity_list(words1, words2):
-            return [self.model.similarity(w1, w2) for w1 in words1 for w2 in words2]
-        
-        S_target1_cat1 = cosine_similarity_list(target1, category1)
-        S_target1_cat2 = cosine_similarity_list(target1, category2)
-        S_target2_cat1 = cosine_similarity_list(target2, category1)
-        S_target2_cat2 = cosine_similarity_list(target2, category2)
-        
-        mean_diff_target1 = np.mean(S_target1_cat1) - np.mean(S_target1_cat2)
-        mean_diff_target2 = np.mean(S_target2_cat1) - np.mean(S_target2_cat2)
-        
-        all_similarities = S_target1_cat1 + S_target1_cat2 + S_target2_cat1 + S_target2_cat2
+            return [self.model.similarity(w1, w2) for w1 in words1 for w2 in words2 if w1 in self.vocab and w2 in self.vocab]
+    
+        # Compute original association scores
+        S_targ1_attr1 = cosine_similarity_list(targ1, attr1)
+        S_targ1_attr2 = cosine_similarity_list(targ1, attr2)
+        S_targ2_attr1 = cosine_similarity_list(targ2, attr1)
+        S_targ2_attr2 = cosine_similarity_list(targ2, attr2)
+    
+        # Compute test statistic (difference in means)
+        mean_diff_targ1 = np.mean(S_targ1_attr1) - np.mean(S_targ1_attr2)
+        mean_diff_targ2 = np.mean(S_targ2_attr1) - np.mean(S_targ2_attr2)
+    
+        # Compute pooled standard deviation across X ∪ Y (as in Caliskan et al.)
+        all_similarities = S_targ1_attr1 + S_targ1_attr2 + S_targ2_attr1 + S_targ2_attr2
         pooled_std = np.std(all_similarities, ddof=1)
-        
+    
         if pooled_std == 0:
-            raise ValueError("Pooled standard deviation is zero, indicating no variation in similarities.")
-        
-        d = (mean_diff_target1 - mean_diff_target2) / pooled_std
-        return d
+            print("⚠️ Warning: No variation in similarities. Returning NaN for WEAT effect size.")
+            return (np.nan, None, None) if return_std else (np.nan, None)
+    
+        # Compute observed WEAT effect size
+        weat_effect_size = (mean_diff_targ1 - mean_diff_targ2) / pooled_std
+    
+        if num_permutations == 0:
+            return (weat_effect_size, None, pooled_std) if return_std else (weat_effect_size, None)
+    
+        # Permutation Test (Shuffle only target words `X` and `Y`)
+        combined_targets = targ1 + targ2
+        n = len(targ1)
+        permuted_effect_sizes = []
+    
+        for _ in range(num_permutations):
+            # Shuffle only the target words (not attributes)
+            perm_targ1 = random.sample(combined_targets, n)
+            perm_targ2 = [w for w in combined_targets if w not in perm_targ1]
+    
+            S_perm_targ1_attr1 = cosine_similarity_list(perm_targ1, attr1)
+            S_perm_targ1_attr2 = cosine_similarity_list(perm_targ1, attr2)
+            S_perm_targ2_attr1 = cosine_similarity_list(perm_targ2, attr1)
+            S_perm_targ2_attr2 = cosine_similarity_list(perm_targ2, attr2)
+    
+            perm_mean_diff_targ1 = np.mean(S_perm_targ1_attr1) - np.mean(S_perm_targ1_attr2)
+            perm_mean_diff_targ2 = np.mean(S_perm_targ2_attr1) - np.mean(S_perm_targ2_attr2)
+    
+            # Compute effect size for this permutation using the original pooled std dev
+            perm_effect_size = (perm_mean_diff_targ1 - perm_mean_diff_targ2) / pooled_std
+            permuted_effect_sizes.append(perm_effect_size)
+    
+        # Compute p-value
+        p_value = np.mean(np.array(permuted_effect_sizes) >= weat_effect_size)
+    
+        # Compute standard deviation of the permuted effect sizes (confidence interval estimate)
+        std_dev = np.std(permuted_effect_sizes, ddof=1) if return_std else None
+    
+        return (weat_effect_size, p_value, std_dev) if return_std else (weat_effect_size, p_value)
 
     def save(self, output_path):
         """
