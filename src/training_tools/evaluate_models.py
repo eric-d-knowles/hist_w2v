@@ -9,7 +9,7 @@ from gensim.test.utils import datapath
 from tqdm.notebook import tqdm
 import pandas as pd
 from multiprocessing import Pool
-from training_tools.w2v_model import W2VModel
+from common.w2v_model import W2VModel
 from gensim.test.utils import datapath
 
 

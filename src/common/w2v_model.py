@@ -239,9 +239,9 @@ class W2VModel:
             "is_aligned": aligned
         }
 
-    def cosine_similarity(self, word1, word2):
+    def compare_words_cosim(self, word1, word2):
         """
-        Compute the cosine similarity between two words in the model.
+        Compute the cosine similarity between two words in a given model.
     
         Args:
             word1 (str): The first word.
@@ -258,7 +258,7 @@ class W2VModel:
     
         return self.model.similarity(word1, word2)
 
-    def cosine_similarity_mean(self, reference_model):
+    def compare_models_cosim(self, reference_model, word=None):
         """
         Compute the mean cosine similarity with a reference model across shared words.
         
@@ -268,17 +268,24 @@ class W2VModel:
         Returns:
             float: The mean cosine similarity of shared words, or None if no shared words exist.
         """
-        common_words = self.vocab.intersection(reference_model.vocab)
-        
-        if not common_words:
-            print("⚠️ Warning: No shared words between models.")
-            return None
-    
-        similarities = [
-            np.dot(self.model[word], reference_model.model[word]) for word in common_words
-        ]
-    
-        return np.mean(similarities)
+        if word:
+            if not (word in self.vocab and word in reference_model.vocab):
+                print(f"⚠️ Warning: Word '{word}' not found in both models.")
+                return None, None, None
+                
+            similarities = np.dot(self.model[word], reference_model.model[word])
+            common_words = 1
+
+        else:
+            common_words = self.vocab.intersection(reference_model.vocab)
+            if not common_words:
+                print("⚠️ Warning: No shared words between models.")
+                return None, None, None
+
+            similarities = [np.dot(self.model[word], reference_model.model[word]) for word in common_words]
+            common_words = len(common_words)
+
+        return (np.mean(similarities), np.std(similarities), common_words)
 
     def mean_cosine_similarity_to_all(self, word, excluded_words=None):
         """

@@ -1,166 +1,135 @@
 import os
+from tqdm.notebook import tqdm
 import glob
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as stats
+from scipy.signal import savgol_filter
 from scipy.ndimage import gaussian_filter1d
 from common.w2v_model import W2VModel
 from multiprocessing import Pool, cpu_count
+from sklearn.linear_model import LinearRegression
+import pandas as pd
 
+def compute_similarity_to_previous_year(args):
+    year, prev_model_path, model_path, word = args
+    
+    prev_model = W2VModel(prev_model_path)
+    model = W2VModel(model_path)
 
-def compute_similarity(args):
-    """Helper function for multiprocessing: Computes mean cosine similarity and its standard deviation."""
-    year, model_path, anchor_model, word = args
-    try:
-        model = W2VModel(model_path)
+    similarity_mean, similarity_sd, common_words = model.compare_models_cosim(prev_model, word)
 
-        # Ensure all vocabulary words are strings
-        model_vocab = {str(word) for word in model.vocab}
-        anchor_vocab = {str(word) for word in anchor_model.vocab}
+    return year, similarity_mean, similarity_sd, common_words
 
-        if word:
-            # Ensure word is a string and exists in both models
-            word = str(word)  
-            if word in model_vocab and word in anchor_vocab:
-                similarity = np.dot(model.model[word], anchor_model.model[word])  # ✅ Correct
-                std_dev = 0  # A single word doesn't have a spread
-                shared_vocab_size = 1  # Only 1 word being compared
-                return (year, similarity, std_dev, shared_vocab_size)
-            else:
-                raise ValueError(f"Word '{word}' not found in one or both models.")
-        else:
-            # Compute similarity for all shared words (after ensuring valid string keys)
-            common_words = model_vocab.intersection(anchor_vocab)
-            if not common_words:
-                raise ValueError("No shared vocabulary.")
-
-            similarities = [
-                np.dot(model.model[word], anchor_model.model[word]) for word in common_words
-            ]
-
-            mean_similarity = np.mean(similarities)
-            std_dev = np.std(similarities, ddof=1)  # Spread of similarity scores
-            shared_vocab_size = len(common_words)  # Number of shared words
-
-            return (year, mean_similarity, std_dev, shared_vocab_size)
-
-    except Exception as e:
-        return (year, None, str(e), 0)  # Return None and error message
-
-
-def track_semantic_drift(
-    start_year, end_year, model_dir, anchor_year=None, word=None,
-    plot=True, smooth=False, sigma=2, confidence=0.95, error_type="CI",
-    num_workers=None
+def track_yearly_drift(
+    start_year, end_year, model_dir, word=None, plot=True, smooth=False, sigma=2, 
+    confidence=0.95, error_type="CI", num_workers=None, df=None, regress_on=None
 ):
-    """
-    Compute semantic drift over time using multiprocessing.
-
-    Args:
-        start_year (int): The starting year of the range.
-        end_year (int): The ending year of the range.
-        model_dir (str): Directory containing yearly .kv model files.
-        anchor_year (int or None): The reference year for comparison. Defaults to the last available year.
-        word (str or None): If provided, tracks drift for a specific word instead of entire vocabulary.
-        plot (bool or int): If `True`, plots without chunking. If an integer `N`, averages every `N` years for plotting.
-        smooth (bool): Whether to overlay a smoothing line over the graph.
-        sigma (float): Standard deviation for Gaussian smoothing.
-        confidence (float): Confidence level for error bands.
-        error_type (str): Either "CI" for confidence intervals or "SE" for standard errors.
-        num_workers (int or None): Number of parallel workers (default: max CPU cores).
-
-    Returns:
-        dict: A dictionary mapping years to (mean cosine similarity, error measure).
-    """
-    drift_scores = {}
+    drift_data = {}
     missing_years = []
     error_years = {}
 
-    # Detect available models
     model_paths = {}
     for year in range(start_year, end_year + 1):
         model_pattern = os.path.join(model_dir, f"w2v_y{year}_*.kv")
         model_files = sorted(glob.glob(model_pattern))
         if model_files:
-            model_paths[year] = model_files[-1]  # Pick the most recent file
+            model_paths[year] = model_files[-1]
         else:
             missing_years.append(year)
 
-    if not model_paths:
-        print("❌ No valid models found in the specified range. Exiting.")
+    if not model_paths or len(model_paths) < 2:
+        print("❌ Not enough valid models found for year-over-year analysis. Exiting.")
         return {}
 
-    # Set the anchor model (default: last available year)
-    if anchor_year is None:
-        anchor_year = max(model_paths.keys())
-
-    if anchor_year not in model_paths:
-        raise ValueError(f"Anchor year {anchor_year} not found in available models.")
-
-    print(f"Using {anchor_year} as anchor model...")
-    anchor_model = W2VModel(model_paths[anchor_year])
-    drift_scores[anchor_year] = (1.0, 0.0)  # Reference year has perfect similarity
-
-    # Prepare multiprocessing arguments
-    args = [(year, path, anchor_model, word) for year, path in model_paths.items() if year != anchor_year]
-
-    # Use multiprocessing to compute similarities in parallel
-    num_workers = num_workers or min(cpu_count(), len(args))  # Limit workers to available tasks
+    years_available = sorted(model_paths.keys())
+    args = [(years_available[i], model_paths[years_available[i-1]], model_paths[years_available[i]], word)
+            for i in range(1, len(years_available))]
+    
+    num_workers = num_workers or min(cpu_count(), len(args))
     with Pool(num_workers) as pool:
-        results = pool.map(compute_similarity, args)
+        results = pool.map(compute_similarity_to_previous_year, args)
 
-    # Process results
-    for year, similarity, std_dev, shared_vocab_size in results:
-        if similarity is not None:
+    for result in results:
+        year, similarity_mean, similarity_sd, shared_vocab_size = result
+        
+        if similarity_mean:
+            change_mean = 1 - similarity_mean
+    
             if error_type == "CI":
-                error_measure = stats.norm.ppf(1 - (1 - confidence) / 2) * std_dev
+                error_measure = stats.norm.ppf(1 - (1 - confidence) / 2) * (similarity_sd / np.sqrt(shared_vocab_size))
             elif error_type == "SE":
-                error_measure = std_dev / np.sqrt(shared_vocab_size) if shared_vocab_size > 1 else 0
+                error_measure = change_mean / np.sqrt(shared_vocab_size) if shared_vocab_size > 1 else 0
             else:
                 raise ValueError("Invalid error_type. Choose 'CI' or 'SE'.")
+            
+            drift_data[year] = (change_mean, error_measure, shared_vocab_size)
 
-            drift_scores[year] = (similarity, error_measure)
-        else:
-            error_years[year] = std_dev  # std_dev contains error message
-
-    # Print missing years and errors
     if missing_years:
         print(f"⚠️ No models found for these years: {missing_years}")
+        
     if error_years:
         print("❌ Errors occurred in the following years:")
         for year, err in error_years.items():
             print(f"  {year}: {err}")
 
-    # Convert to NumPy arrays for plotting
-    if not drift_scores:
+    if not drift_data:
         print("❌ No valid drift scores computed. Exiting.")
         return {}
 
-    years = np.array(sorted(drift_scores.keys()))
-    similarities = np.array([drift_scores[year][0] for year in years])
-    error_measures = np.array([drift_scores[year][1] for year in years])
+    df_drift = pd.DataFrame.from_dict(drift_data, orient="index", columns=["Drift", "Error", "Shared"])
+    df_drift.index.name = "Year"
 
-    # Apply Smoothing
-    smoothed_values = gaussian_filter1d(similarities, sigma=sigma) if smooth else None
+    adjusted = False
+    if df is not None and regress_on is not None:
+        if regress_on not in df.columns:
+            print(f"⚠️ Regressor '{regress_on}' not found in the provided DataFrame. Proceeding without adjustment.")
+        else:
+            df_drift = df_drift.merge(df[[regress_on]], left_index=True, right_index=True, how="left").dropna()
+            X = df_drift[[regress_on]].values.reshape(-1, 1)
+            y = df_drift["Drift"].values.reshape(-1, 1)
+            reg = LinearRegression().fit(X, y)
+            y_pred = reg.predict(X)
+            df_drift["Drift_Adjusted"] = y - y_pred  # Residuals
+            adjusted = True
 
-    # ✅ Plot Results
+    # Function to plot drift data
+    def plot_drift(ax, years, drift, errors, label, title):
+        ax.scatter(years, drift, color='blue', alpha=0.2, label=label)
+        ax.errorbar(years, drift, yerr=errors, fmt='o', color='blue', alpha=0.3, label="Error bars")
+
+        if smooth:
+            smoothed = gaussian_filter1d(drift, sigma=sigma)
+            ax.plot(years, smoothed, linestyle='--', color='red', linewidth=2, label=f"Smoothed (σ={sigma})")
+            derivative = savgol_filter(smoothed, window_length=11, polyorder=3, deriv=1, delta=np.mean(np.diff(years)))
+            
+            ax2 = ax.twinx()
+            ax2.plot(years, derivative, linestyle='-', color='green', linewidth=1, label="First Derivative")
+            ax2.set_ylabel("Rate of Change")
+            ax2.set_ylim(-0.005, 0.003)
+
+            ax.legend(loc="upper left")
+            ax2.legend(loc="upper right")
+
+        ax.set_xlabel("Year")
+        ax.set_ylabel("Change Magnitude")
+        ax.set_title(title)
+        ax.grid(True)
+
+    # Plot Unadjusted Scores
     if plot:
-        plt.figure(figsize=(10, 5))
-        plt.plot(years, similarities, marker='o', linestyle='-', label=f"Semantic Drift of '{word}'" if word else "Mean Cosine Similarity", color='blue')
-
-        if smooth and smoothed_values is not None:
-            plt.plot(years, smoothed_values, linestyle='--', color='red', label=f'Smoothed Trend')
-
-        if error_measures is not None:
-            plt.fill_between(years, similarities - error_measures, similarities + error_measures, color='blue', alpha=0.2, label=f"{int(confidence * 100)}% {error_type}")
-
-        plt.axhline(y=1.0, color="gray", linestyle="--", label=f"Anchor Year: {anchor_year}")
-
-        plt.xlabel("Year")
-        plt.ylabel("Cosine Similarity to Anchor Year")
-        plt.title(f"Semantic Drift Over Time {'for ' + word if word else ''}")
-        plt.legend()
-        plt.grid(True)
+        fig, ax1 = plt.subplots(figsize=(10, 5))
+        plot_drift(ax1, df_drift.index, df_drift["Drift"], df_drift["Error"], "Unadjusted Drift", 
+                   f"Year-over-Year Semantic Change {'for ' + word if word else ''}")
+        plt.tight_layout()
         plt.show()
 
-    return drift_scores
+    # Plot Adjusted Scores if Regression was Performed
+    if adjusted:
+        fig, ax2 = plt.subplots(figsize=(10, 5))
+        plot_drift(ax2, df_drift.index, df_drift["Drift_Adjusted"], df_drift["Error"], "Adjusted Drift (Residuals)", 
+                   f"Adjusted Year-over-Year Semantic Change {'for ' + word if word else ''}")
+        plt.tight_layout()
+        plt.show()
+
+    return df_drift

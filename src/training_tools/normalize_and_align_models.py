@@ -7,7 +7,7 @@ from pathlib import Path
 from multiprocessing import Pool
 
 from tqdm.notebook import tqdm
-from training_tools.w2v_model import W2VModel
+from common.w2v_model import W2VModel
 
 
 def get_model_paths(model_dir):
