@@ -25,7 +25,7 @@ filters_global = {}
 min_tokens_global = 2
 
 
-def initializer(vocab_set, stopword_set, filters, min_tokens):
+def initializer(vocab_set, stopword_set, filters, min_tokens, replace_unk, overwrite):
     """
     Initialize global variables in each worker process.
 
@@ -34,16 +34,21 @@ def initializer(vocab_set, stopword_set, filters, min_tokens):
         stopword_set (frozenset): A set of stopwords to filter out (if applicable).
         filters (dict): A dictionary of filter flags and parameters.
         min_tokens (int): The minimum number of tokens for an ngram to be retained.
+        replace_unk (bool): Whether to drop or replace ineligible tokens.
     """
     global global_vocab_set
     global global_stopword_set
     global filters_global
     global min_tokens_global
+    global replace_unk_global
+    global overwrite_global
 
     global_vocab_set = vocab_set
     global_stopword_set = stopword_set
     filters_global = filters
     min_tokens_global = min_tokens
+    replace_unk_global = replace_unk
+    overwrite_global = overwrite
 
 
 def construct_output_path(input_file, output_dir, compress):
@@ -144,6 +149,7 @@ def print_info(
     min_tokens,
     start_time,
     vocab_file,
+    replace_unk,
     delete_input
 ):
     """
@@ -165,6 +171,7 @@ def print_info(
         min_tokens (int): Minimum number of tokens per ngram to retain.
         start_time (datetime): The time the process started.
         vocab_file (str or None): Path to a vocabulary file, if any.
+        replace_unk (bool): Whether to drop or replace ineligible tokens.
         delete_input (bool): Whether input files will be deleted after processing.
     """
     print(f'\033[31mStart Time:                   {start_time}\n\033[0m')
@@ -188,6 +195,7 @@ def print_info(
     print(f'Drop tokens with numerals:    {filters["numerals"]}')
     print(f'Drop non-alphabetic:          {filters["nonalpha"]}')
     print(f'Drop ngrams under:            {min_tokens} token(s)')
+    print(f'Replace tokens:               {replace_unk}')
     if vocab_file:
         print(f'Vocab file:                   {vocab_file}')
     print()
@@ -260,12 +268,14 @@ def process_a_line(ngram_dict):
         passes_check, count_key = passes_filters(word)
         if passes_check:
             filtered_ngram[token] = word
+        elif replace_unk_global:
+            filtered_ngram[token] = "UNK"
+            local_counts[count_key] += 1
         else:
-            if count_key:
-                local_counts[count_key] += 1
+            local_counts[count_key] += 1
 
     # If the ngram is too short after filtering, drop it entirely.
-    if len(filtered_ngram) < min_tokens_global:
+    if len(filtered_ngram) < min_tokens_global or all(v == "UNK" for v in filtered_ngram.values()):
         local_counts['dropped_ngrams'] += 1
         return None, local_counts
 
@@ -281,12 +291,11 @@ def process_a_file(args):
         args (tuple):
             - input_handler (FileHandler): Handler for reading the input file.
             - output_handler (FileHandler): Handler for writing the output file.
-            - overwrite (bool): Whether to overwrite existing output files.
 
     Returns:
         dict: A dictionary of counts for dropped tokens/ngrams in this file.
     """
-    input_handler, output_handler, overwrite = args
+    input_handler, output_handler = args
 
     file_counts = {
         'dropped_stop': 0,
@@ -298,7 +307,7 @@ def process_a_file(args):
     }
 
     # If output file exists and overwrite is False, skip processing.
-    if not overwrite and os.path.exists(output_handler.path):
+    if not overwrite_global and os.path.exists(output_handler.path):
         return
 
     try:
@@ -342,7 +351,8 @@ def process_a_directory(
     filters,
     min_tokens,
     vocab_set,
-    stopword_set
+    stopword_set,
+    replace_unk
 ):
     """
     Process multiple files in a directory using a pool of worker processes.
@@ -381,7 +391,7 @@ def process_a_directory(
         handlers.append((in_handler, out_handler))
 
     args = [
-        (in_handler, out_handler, overwrite)
+        (in_handler, out_handler)
         for in_handler, out_handler in handlers
     ]
 
@@ -389,7 +399,7 @@ def process_a_directory(
         with Pool(
             processes=workers,
             initializer=initializer,
-            initargs=(vocab_set, stopword_set, filters, min_tokens)
+            initargs=(vocab_set, stopword_set, filters, min_tokens, replace_unk, overwrite)
         ) as pool:
             results = []
             for result in pool.imap_unordered(process_a_file, args):
@@ -442,6 +452,7 @@ def filter_ngrams(
     min_token_length=3,
     vocab_file=None,
     min_tokens=2,
+    replace_unk=False,
     delete_input=False
 ):
     """
@@ -462,6 +473,7 @@ def filter_ngrams(
         vocab_file (str, optional): Relative path to a vocabulary file.
         min_tokens (int, optional): Minimum tokens in an ngram to retain.
         delete_input (bool, optional): Remove input directory after processing.
+        replace_unk (bool, optional): Whether to drop or replace ineligible tokens.
     """
     start_time = datetime.now()
 
@@ -524,6 +536,7 @@ def filter_ngrams(
         min_tokens,
         start_time,
         vocab_file,
+        replace_unk,
         delete_input
     )
 
@@ -538,7 +551,8 @@ def filter_ngrams(
         filters,
         min_tokens,
         vocab_set,
-        stopword_set
+        stopword_set,
+        replace_unk
     )
 
     end_time = datetime.now()

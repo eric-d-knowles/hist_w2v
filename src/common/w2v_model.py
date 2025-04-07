@@ -309,7 +309,7 @@ class W2VModel:
         for other_word in self.vocab:
             if other_word == word or other_word in excluded_words:
                 continue  # Skip self-similarity
-            total_similarity += self.cosine_similarity(word, other_word)
+            total_similarity += self.compare_words_cosim(word, other_word)
             count += 1
     
         return total_similarity / count if count > 0 else 0
