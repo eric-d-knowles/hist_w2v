@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hist_w2v"
-version = "0.1.5"
+version = "0.1.6"
 authors = [
   { name = "Eric D. Knowles", email = "edk202@nyu.edu" }
 ]
