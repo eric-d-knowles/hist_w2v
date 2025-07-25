@@ -166,34 +166,57 @@ def process_a_file(args):
         sort_order
     ) = args
 
-    if not overwrite and os.path.exists(output_handler.path):
-        # If not overwriting, just count lines in the existing input file.
-        with input_handler.open() as infile:
-            line_count = sum(1 for _ in infile)
-        return line_count
+    import time
+    import traceback
+    from datetime import datetime
+    log_path = os.path.abspath('sort_ngrams_worker.log')
+    pid = os.getpid()
+    file_path = getattr(input_handler, 'path', 'unknown')
+    start_time = datetime.now().isoformat()
+    try:
+        with open(log_path, 'a') as logf:
+            logf.write(f"[START] PID {pid} | File: {file_path} | Start: {start_time}\n")
 
-    with input_handler.open() as infile, output_handler.open() as outfile:
-        lines = []
+        if not overwrite and os.path.exists(output_handler.path):
+            with input_handler.open() as infile:
+                line_count = sum(1 for _ in infile)
+            finish_time = datetime.now().isoformat()
+            with open(log_path, 'a') as logf:
+                logf.write(f"[FINISH] PID {pid} | File: {file_path} | Finish: {finish_time} | Lines: {line_count}\n")
+            return line_count
 
-        for line in infile:
-            entry = input_handler.deserialize(line)
-            if sort_key == 'ngram':
-                # Convert ngram (dict of tokens) into a single string for sorting
-                tokens = list(entry['ngram'].values())
-                entry['ngram'] = " ".join(tokens)
-            lines.append(entry)
+        with input_handler.open() as infile, output_handler.open() as outfile:
+            lines = []
+            for line in infile:
+                entry = input_handler.deserialize(line)
+                if sort_key == 'ngram':
+                    tokens = list(entry['ngram'].values())
+                    entry['ngram'] = " ".join(tokens)
+                lines.append(entry)
 
-        reverse = (sort_order == 'descending')
+            reverse = (sort_order == 'descending')
+            if sort_key == 'freq_tot':
+                lines.sort(key=lambda x: x['freq_tot'], reverse=reverse)
+            elif sort_key == 'ngram':
+                lines.sort(key=lambda x: x['ngram'], reverse=reverse)
 
-        if sort_key == 'freq_tot':
-            lines.sort(key=lambda x: x['freq_tot'], reverse=reverse)
-        elif sort_key == 'ngram':
-            lines.sort(key=lambda x: x['ngram'], reverse=reverse)
+            for line_data in lines:
+                outfile.write(output_handler.serialize(line_data))
 
-        for line_data in lines:
-            outfile.write(output_handler.serialize(line_data))
-
-    return len(lines)
+        finish_time = datetime.now().isoformat()
+        with open(log_path, 'a') as logf:
+            logf.write(f"[FINISH] PID {pid} | File: {file_path} | Finish: {finish_time} | Lines: {len(lines)}\n")
+        return len(lines)
+    except Exception as e:
+        finish_time = datetime.now().isoformat()
+        err_msg = (
+            f"[ERROR] PID {pid} | File: {file_path} | Time: {finish_time}\n"
+            f"{type(e).__name__}: {e}\n{traceback.format_exc()}"
+        )
+        with open(log_path, 'a') as logf:
+            logf.write(err_msg)
+        print(err_msg, file=sys.stderr)
+        return 0
 
 
 def process_a_directory(
