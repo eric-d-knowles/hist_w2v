@@ -26,13 +26,27 @@ def is_file_sorted(file_handler, field, sort_order):
         unit='line', desc="Lines", dynamic_ncols=True, file=sys.stdout
     ) as pbar:
         for line_number, line in enumerate(infile, start=1):
-            # Deserialize the line using FileHandler
             entry = file_handler.deserialize(line.strip())
             current_value = entry.get(field)
 
             if current_value is None:
                 print(f"Line {line_number}: Missing '{field}' field.")
                 return False
+
+            # Always join and lowercase ngram tokens for comparison
+            if field == 'ngram':
+                if isinstance(current_value, dict):
+                    current_value = ' '.join([str(current_value.get(f'token{i+1}', '')).lower() for i in range(5)]).strip()
+                elif isinstance(current_value, list):
+                    current_value = ' '.join(str(token).lower() for token in current_value)
+                else:
+                    current_value = str(current_value).lower()
+                if isinstance(previous_value, dict):
+                    previous_value = ' '.join([str(previous_value.get(f'token{i+1}', '')).lower() for i in range(5)]).strip()
+                elif isinstance(previous_value, list):
+                    previous_value = ' '.join(str(token).lower() for token in previous_value)
+                elif previous_value is not None:
+                    previous_value = str(previous_value).lower()
 
             # Compare values based on sort order
             if previous_value is not None:
@@ -49,7 +63,6 @@ def is_file_sorted(file_handler, field, sort_order):
                     )
                     return False
 
-            # Update previous value for the next comparison
             previous_value = current_value
             pbar.update(1)
 
