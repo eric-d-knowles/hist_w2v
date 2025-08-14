@@ -254,11 +254,11 @@ def setup_rocksdb(db_path: str) -> rocksdict.Rdict:
     parent_dir = os.path.dirname(db_path) if os.path.dirname(db_path) else "."
     os.makedirs(parent_dir, exist_ok=True)
     
-    # Advanced options for compaction and performance tuning (using supported setter methods)
+    # Advanced options for compaction and performance tuning
     options = rocksdict.Options()
     options.create_if_missing(True)
     options.set_max_background_jobs(8)
-    options.set_write_buffer_size(128 * 1024 * 1024)
+    options.set_write_buffer_size(256 * 1024 * 1024)
     options.set_level_zero_file_num_compaction_trigger(12)
     # You can further tune these if needed:
     # options.set_target_file_size_base(128 * 1024 * 1024)
