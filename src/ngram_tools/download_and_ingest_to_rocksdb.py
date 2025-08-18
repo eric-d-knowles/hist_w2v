@@ -478,14 +478,14 @@ def process_and_ingest_file(
                         import struct
                         freq_tuples = [
                             (
-                                freq['year'],
-                                freq['frequency'],
-                                freq['document_count'],
+                                int(freq['year']),
+                                int(freq['frequency']),
+                                int(freq['document_count']),
                             )
                             for freq in ngram_data.get('frequencies', [])
                         ]
                         packed = struct.pack(
-                            f'<{len(freq_tuples)*3}I',
+                            f'<{len(freq_tuples)*3}Q',
                             *(
                                 x
                                 for tup in freq_tuples
